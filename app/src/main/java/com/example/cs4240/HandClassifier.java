@@ -49,11 +49,15 @@ public class HandClassifier {
     private FirebaseModelInputOutputOptions inputOutputOptions;
     private Activity parentActivity;
     private float[][] results;
+    private ByteBuffer byteBuffer;
+
+    private long startTime;
 
     public HandClassifier(Activity activity, String model, int outputSize) throws IOException {
         this.outputSize = outputSize;
         this.parentActivity = activity;
         this.results = null;
+        this.byteBuffer = ByteBuffer.allocateDirect(4 * BATCH_SIZE * inputSize * inputSize * PIXEL_SIZE);
 
         FirebaseCustomLocalModel localModel = new FirebaseCustomLocalModel.Builder()
                 .setAssetFilePath(model)
@@ -74,7 +78,7 @@ public class HandClassifier {
     }
 
     public void predict(Bitmap image) throws FirebaseMLException {
-        long startTime = System.nanoTime();
+        startTime = System.nanoTime();
 
         FirebaseModelInputs inputs = new FirebaseModelInputs.Builder()
                 .add(convertBitmapToByteBuffer(image))  // add() as many input arrays as your model requires
@@ -86,7 +90,10 @@ public class HandClassifier {
                             public void onSuccess(FirebaseModelOutputs result) {
                                 Log.d("test", "success");
                                 results = result.getOutput(0);
-                                ((CameraActivity)parentActivity).labelImage();
+                                long endTime = System.nanoTime();
+                                long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
+                                Log.d("test", "Time taken to predict: " + String.valueOf(duration/1000000) + "ms");
+                                ((CameraActivity)parentActivity).setImage();
                             }
                         })
                 .addOnFailureListener(
@@ -97,9 +104,7 @@ public class HandClassifier {
                             }
                         });
 
-        long endTime = System.nanoTime();
-        long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
-        Log.d("test", "Time taken to predict: " + String.valueOf(duration/1000000) + "ms");
+
     }
 
     public void label(Bitmap image) {
@@ -132,13 +137,14 @@ public class HandClassifier {
             canvas.drawCircle(results[0][i] * xScale, results[0][i+1] * yScale, 10.0f, paint);
         }
 
+        Log.d("test", String.valueOf(minX));
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(5.0f);
         canvas.drawRect(minX -50, minY-50, maxX+50, maxY+50, paint);
     }
 
     private ByteBuffer convertBitmapToByteBuffer(Bitmap bitmap) {
-        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4 * BATCH_SIZE * inputSize * inputSize * PIXEL_SIZE);
+        byteBuffer.clear();
         byteBuffer.order(ByteOrder.nativeOrder());
         int[] intValues = new int[inputSize * inputSize];
         bitmap = Bitmap.createScaledBitmap(bitmap, inputSize, inputSize, false);

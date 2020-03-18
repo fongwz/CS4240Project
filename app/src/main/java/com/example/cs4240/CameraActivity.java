@@ -26,11 +26,27 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
 import android.util.Size;
+import android.view.MenuItem;
 import android.view.Surface;
+import android.view.SurfaceView;
 import android.view.TextureView;
+import android.view.WindowManager;
 import android.widget.ImageView;
 
 import com.google.firebase.ml.common.FirebaseMLException;
+
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.CameraBridgeViewBase;
+import org.opencv.android.JavaCameraView;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.core.Core;
+import org.opencv.core.CvException;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.Scalar;
+import org.opencv.imgproc.Imgproc;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -38,8 +54,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class CameraActivity extends AppCompatActivity {
+public class CameraActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
+    /*
     private CameraManager cameraManager;
     int cameraFacing;
     private TextureView.SurfaceTextureListener surfaceTextureListener;
@@ -61,11 +78,121 @@ public class CameraActivity extends AppCompatActivity {
 
     private HandClassifier classifier;
     private Bitmap newBmp;
+    */
+
+    private static final String TAG = "test";
+
+    private CameraBridgeViewBase mOpenCvCameraView;
+    private boolean  mIsJavaCamera = true;
+    private MenuItem mItemSwitchCamera = null;
+
+    Mat mRgba;
+    Mat mRgbaF;
+    Mat mRgbaT;
+    private Bitmap bmp;
+    private boolean initBmp = false;
+
+    private HandClassifier classifier;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_camera);
+
+        mOpenCvCameraView = (JavaCameraView) findViewById(R.id.cv_camera_view);
+        mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
+        mOpenCvCameraView.setCvCameraViewListener(this);
+
+        try {
+            classifier = new HandClassifier(this, "hand_landmark.tflite", 42);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
+        @Override
+        public void onManagerConnected(int status) {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS:
+                {
+                    Log.i(TAG, "OpenCV loaded successfully");
+                    mOpenCvCameraView.enableView();
+                } break;
+                default:
+                {
+                    super.onManagerConnected(status);
+                } break;
+            }
+        }
+    };
+
+    public void onCameraViewStarted(int width, int height) {
+        mRgba = new Mat(height, width, CvType.CV_8UC4);
+        mRgbaF = new Mat(height, width, CvType.CV_8UC4);
+        mRgbaT = new Mat(width, width, CvType.CV_8UC4);
+    }
+
+    public void onCameraViewStopped() {
+        mRgba.release();
+    }
+
+    public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
+        mRgba = inputFrame.rgba();
+        if (!initBmp) {
+            bmp = Bitmap.createBitmap(mRgba.cols(), mRgba.rows(), Bitmap.Config.ARGB_8888);
+            initBmp = true;
+        }
+        // Rotate mRgba 90 degrees
+        Core.transpose(mRgba, mRgbaT);
+        Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 0,0, 0);
+        Core.flip(mRgbaF, mRgba, 1 );
+
+        Utils.matToBitmap(mRgba, bmp);
+        try {
+            classifier.predict(bmp);
+        } catch (FirebaseMLException e) {
+            e.printStackTrace();
+        }
+        return mRgba; // This function must return
+    }
+
+    public void setImage() {
+        this.classifier.label(bmp);
+        ImageView imView = (ImageView)findViewById(R.id.im_view);
+        imView.setImageBitmap(bmp);
+    }
+
+    @Override
+    public void onPause()
+    {
+        super.onPause();
+        if (mOpenCvCameraView != null)
+            mOpenCvCameraView.disableView();
+    }
+
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+        if (!OpenCVLoader.initDebug()) {
+            Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
+            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
+        } else {
+            Log.d(TAG, "OpenCV library found inside package. Using it!");
+            mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
+        }
+    }
+
+    public void onDestroy() {
+        super.onDestroy();
+        if (mOpenCvCameraView != null)
+            mOpenCvCameraView.disableView();
+    }
+
+    /*
         textureView = findViewById(R.id.texture_view);
 
         try {
@@ -267,5 +394,5 @@ public class CameraActivity extends AppCompatActivity {
             backgroundThread = null;
             backgroundHandler = null;
         }
-    }
+    } */
 }

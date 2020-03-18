@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
             Bitmap bmp = BitmapFactory.decodeResource(this.getResources(), test_img);
             Bitmap newBmp = bmp.copy(android.graphics.Bitmap.Config.ARGB_8888, true);
 
-            classifier = new HandClassifier(this, model_file, 42);
+            //classifier = new HandClassifier(this, model_file, 42);
             //classifier.predict(bmp);
         } catch (Exception e) {
             e.printStackTrace();
