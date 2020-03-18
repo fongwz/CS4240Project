@@ -7,9 +7,11 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -32,6 +34,7 @@ import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.google.firebase.ml.common.FirebaseMLException;
 
@@ -90,8 +93,9 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     Mat mRgbaF;
     Mat mRgbaT;
     private Bitmap bmp;
+    private Bitmap overlayBmp;
     private boolean initBmp = false;
-
+    private static final int CAMERA_PERMISSION = 555;
     private HandClassifier classifier;
 
     @Override
@@ -101,9 +105,18 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_camera);
 
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION);
+        }
+
         mOpenCvCameraView = (JavaCameraView) findViewById(R.id.cv_camera_view);
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
+        mOpenCvCameraView.setMaxFrameSize(1900, 1080);
+        overlayBmp = Bitmap.createBitmap(1920, 1080, Bitmap.Config.ARGB_8888);
+        ImageView imView = (ImageView)findViewById(R.id.im_view);
+        imView.setImageBitmap(overlayBmp);
 
         try {
             classifier = new HandClassifier(this, "hand_landmark.tflite", 42);
@@ -141,28 +154,36 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         mRgba = inputFrame.rgba();
+
         if (!initBmp) {
             bmp = Bitmap.createBitmap(mRgba.cols(), mRgba.rows(), Bitmap.Config.ARGB_8888);
+
             initBmp = true;
         }
         // Rotate mRgba 90 degrees
         Core.transpose(mRgba, mRgbaT);
-        Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 0,0, 0);
+        Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 1900,1080, 0);
         Core.flip(mRgbaF, mRgba, 1 );
 
         Utils.matToBitmap(mRgba, bmp);
+        classifier.predict(bmp);
+        /*
         try {
             classifier.predict(bmp);
         } catch (FirebaseMLException e) {
             e.printStackTrace();
-        }
+        }*/
+        //classifier.label(overlayBmp);
+        overlayBmp.eraseColor(Color.TRANSPARENT);
+        setImage();
+
         return mRgba; // This function must return
     }
 
     public void setImage() {
-        this.classifier.label(bmp);
+        this.classifier.label(overlayBmp);
         ImageView imView = (ImageView)findViewById(R.id.im_view);
-        imView.setImageBitmap(bmp);
+        imView.setImageBitmap(overlayBmp);
     }
 
     @Override
@@ -192,207 +213,19 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
             mOpenCvCameraView.disableView();
     }
 
-    /*
-        textureView = findViewById(R.id.texture_view);
-
-        try {
-            classifier = new HandClassifier(this, "hand_landmark.tflite", 42);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST_CODE);
-
-        cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-        cameraFacing = CameraCharacteristics.LENS_FACING_BACK;
-
-        surfaceTextureListener = new TextureView.SurfaceTextureListener() {
-            @Override
-            public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int width, int height) {
-                setUpCamera();
-                openCamera();
-            }
-
-            @Override
-            public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int width, int height) {
-
-            }
-
-            @Override
-            public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
-                return false;
-            }
-
-            @Override
-            public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-
-            }
-        };
-
-        stateCallback = new CameraDevice.StateCallback() {
-            @Override
-            public void onOpened(CameraDevice cameraDevice) {
-                CameraActivity.this.cameraDevice = cameraDevice;
-                createPreviewSession();
-            }
-
-            @Override
-            public void onDisconnected(CameraDevice cameraDevice) {
-                cameraDevice.close();
-                CameraActivity.this.cameraDevice = null;
-            }
-
-            @Override
-            public void onError(CameraDevice cameraDevice, int error) {
-                cameraDevice.close();
-                CameraActivity.this.cameraDevice = null;
-            }
-        };
-    }
-
-    private void setUpCamera() {
-        try {
-            for (String cameraId : cameraManager.getCameraIdList()) {
-                CameraCharacteristics cameraCharacteristics =
-                        cameraManager.getCameraCharacteristics(cameraId);
-                if (cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) ==
-                        cameraFacing) {
-                    StreamConfigurationMap streamConfigurationMap = cameraCharacteristics.get(
-                            CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-                    previewSize = streamConfigurationMap.getOutputSizes(SurfaceTexture.class)[0];
-                    this.cameraId = cameraId;
-                }
-            }
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void openCamera() {
-        try {
-            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
-                    == PackageManager.PERMISSION_GRANTED) {
-                cameraManager.openCamera(cameraId, stateCallback, backgroundHandler);
-            }
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void createPreviewSession() {
-        try {
-            final SurfaceTexture surfaceTexture = textureView.getSurfaceTexture();
-            surfaceTexture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
-            Surface previewSurface = new Surface(surfaceTexture);
-            captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            imageReader = ImageReader.newInstance(previewSize.getWidth(), previewSize.getHeight(), ImageFormat.YUV_420_888, 2);
-            imageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
-                @Override
-                public void onImageAvailable(ImageReader reader) {
-                    Image image = reader.acquireNextImage();
-                    if (image == null) {
-                        return;
-                    }
-
-                    ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-                    byte[] bytes = new byte[buffer.remaining()];
-                    buffer.get(bytes);
-                    Bitmap bmp = BitmapFactory.decodeByteArray(bytes,0,bytes.length,null);
-                    Log.d("test", String.valueOf(bmp.getByteCount()));
-                    newBmp = bmp.copy(android.graphics.Bitmap.Config.ARGB_8888, true);
-
-                    try {
-                        classifier.predict(bmp);
-                    } catch (FirebaseMLException e) {
-                        e.printStackTrace();
-                    }
-
-                    image.close();
-                }
-            }, backgroundHandler);
-
-
-            captureRequestBuilder.addTarget(previewSurface);
-            //captureRequestBuilder.addTarget(imageReader.getSurface());
-
-            List<Surface> outputSurfaces = new ArrayList<>();
-            outputSurfaces.add(previewSurface);
-            //outputSurfaces.add(imageReader.getSurface());
-            cameraDevice.createCaptureSession(outputSurfaces,
-                    new CameraCaptureSession.StateCallback() {
-
-                        @Override
-                        public void onConfigured(CameraCaptureSession cameraCaptureSession) {
-                            if (cameraDevice == null) {
-                                return;
-                            }
-
-                            try {
-                                captureRequest = captureRequestBuilder.build();
-                                CameraActivity.this.cameraCaptureSession = cameraCaptureSession;
-                                CameraActivity.this.cameraCaptureSession.setRepeatingRequest(captureRequest,
-                                        null, backgroundHandler);
-                            } catch (CameraAccessException e) {
-                                e.printStackTrace();
-                            }
-                        }
-
-                        @Override
-                        public void onConfigureFailed(CameraCaptureSession cameraCaptureSession) {
-
-                        }
-                    }, backgroundHandler);
-        } catch (CameraAccessException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void labelImage() {
-        this.classifier.label(newBmp);
-    }
-
-    private void openBackgroundThread() {
-        backgroundThread = new HandlerThread("camera_background_thread");
-        backgroundThread.start();
-        backgroundHandler = new Handler(backgroundThread.getLooper());
-    }
-
     @Override
-    protected void onResume() {
-        super.onResume();
-        openBackgroundThread();
-        if (textureView.isAvailable()) {
-            setUpCamera();
-            openCamera();
-        } else {
-            textureView.setSurfaceTextureListener(surfaceTextureListener);
+    public void onRequestPermissionsResult(int requestCode,  String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case CAMERA_PERMISSION:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    //if(mClss != null) {
+                        Intent intent = new Intent(this, CameraActivity.class);
+                        startActivity(intent);
+                    //}
+                } else {
+                    Toast.makeText(this, "Please grant camera permission to use the QR Scanner", Toast.LENGTH_SHORT).show();
+                }
+                return;
         }
     }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        closeCamera();
-        closeBackgroundThread();
-    }
-
-    private void closeCamera() {
-        if (cameraCaptureSession != null) {
-            cameraCaptureSession.close();
-            cameraCaptureSession = null;
-        }
-
-        if (cameraDevice != null) {
-            cameraDevice.close();
-            cameraDevice = null;
-        }
-    }
-
-    private void closeBackgroundThread() {
-        if (backgroundHandler != null) {
-            backgroundThread.quitSafely();
-            backgroundThread = null;
-            backgroundHandler = null;
-        }
-    } */
 }
