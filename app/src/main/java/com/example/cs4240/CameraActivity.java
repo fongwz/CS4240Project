@@ -14,6 +14,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
+import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -98,6 +99,9 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     private static final int CAMERA_PERMISSION = 555;
     private HandClassifier classifier;
 
+    private CameraCharacteristics cameraCharacteristics;
+    private CameraManager manager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -105,6 +109,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_camera);
 
+        //previewCameraSizes();
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION);
@@ -113,8 +118,10 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         mOpenCvCameraView = (JavaCameraView) findViewById(R.id.cv_camera_view);
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
-        mOpenCvCameraView.setMaxFrameSize(1900, 1080);
-        overlayBmp = Bitmap.createBitmap(1920, 1080, Bitmap.Config.ARGB_8888);
+        mOpenCvCameraView.setMinimumWidth(1440); //doesn't seem to work
+        mOpenCvCameraView.setMinimumHeight(1080);
+        mOpenCvCameraView.setMaxFrameSize(1440, 1080);
+        overlayBmp = Bitmap.createBitmap(1440, 1080, Bitmap.Config.ARGB_8888);
         ImageView imView = (ImageView)findViewById(R.id.im_view);
         imView.setImageBitmap(overlayBmp);
 
@@ -157,7 +164,6 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
         if (!initBmp) {
             bmp = Bitmap.createBitmap(mRgba.cols(), mRgba.rows(), Bitmap.Config.ARGB_8888);
-
             initBmp = true;
         }
         // Rotate mRgba 90 degrees
@@ -166,17 +172,13 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         Core.flip(mRgbaF, mRgba, 1 );
 
         Utils.matToBitmap(mRgba, bmp);
-        classifier.predict(bmp);
-        /*
+        overlayBmp.eraseColor(Color.TRANSPARENT);
+
         try {
             classifier.predict(bmp);
         } catch (FirebaseMLException e) {
             e.printStackTrace();
-        }*/
-        //classifier.label(overlayBmp);
-        overlayBmp.eraseColor(Color.TRANSPARENT);
-        setImage();
-
+        }
         return mRgba; // This function must return
     }
 
@@ -226,6 +228,21 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                     Toast.makeText(this, "Please grant camera permission to use the QR Scanner", Toast.LENGTH_SHORT).show();
                 }
                 return;
+        }
+    }
+
+    private void previewCameraSizes() {
+        // Check camera supported sizes
+        manager = (CameraManager) this.getSystemService(Context.CAMERA_SERVICE);
+        try {
+            cameraCharacteristics = manager.getCameraCharacteristics(manager.getCameraIdList()[0]);
+            StreamConfigurationMap scmap = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            Size[] previewSizes = scmap.getOutputSizes(ImageReader.class);
+            for (int i = 0; i < previewSizes.length; i++) {
+                //Log.d("test", previewSizes[i].toString());
+            }
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
         }
     }
 }

@@ -48,25 +48,21 @@ public class HandClassifier {
     private static final float IMAGE_STD = 128.0f;
 
     private int outputSize;
-    private Interpreter interpreter;
-    //private FirebaseModelInterpreter interpreter;
+    private FirebaseModelInterpreter interpreter;
     private FirebaseModelInputOutputOptions inputOutputOptions;
     private Activity parentActivity;
-    //private float[][] results;
+    private float[][] results;
     private float[][] results2;
     private ByteBuffer byteBuffer;
 
     private long startTime;
-    private Map<Integer, Object> results = new HashMap<>();
-    private Object[] inputs = new Object[1];
 
     public HandClassifier(Activity activity, String model, int outputSize) throws IOException {
         this.outputSize = outputSize;
         this.parentActivity = activity;
-        //this.results = null;
+        this.results = null;
         this.byteBuffer = ByteBuffer.allocateDirect(4 * BATCH_SIZE * inputSize * inputSize * PIXEL_SIZE);
 
-        /*
         FirebaseCustomLocalModel localModel = new FirebaseCustomLocalModel.Builder()
                 .setAssetFilePath(model)
                 .build();
@@ -83,18 +79,12 @@ public class HandClassifier {
                             .build();
         } catch (FirebaseMLException e) {
             e.printStackTrace();
-        }*/
-
-        this.interpreter = new Interpreter(loadModelFile(activity, "hand_landmark.tflite"));
-        float[][] res1 = new float[1][42];
-        float[][] res2 = new float[1][1];
-        this.results.put(0, res1);
-        this.results.put(1, res2);
+        }
     }
 
-    public void predict(Bitmap image) {
+    public void predict(Bitmap image) throws FirebaseMLException {
         startTime = System.nanoTime();
-        /*
+
         FirebaseModelInputs inputs = new FirebaseModelInputs.Builder()
                 .add(convertBitmapToByteBuffer(image))  // add() as many input arrays as your model requires
                 .build();
@@ -121,16 +111,11 @@ public class HandClassifier {
                                 e.printStackTrace();
                             }
                         });
-        */
-
-        inputs[0] = convertBitmapToByteBuffer(image);
-        interpreter.runForMultipleInputsOutputs(inputs, results);
-        Log.d("test", String.valueOf(((float[][])results.get(1))[0][0]));
     }
 
     public void label(Bitmap image) {
 
-        if (((float[][])results.get(1))[0][0] < 0.3) {
+        if (results[0][0] < 0.3) {
             return;
         }
 
@@ -147,8 +132,8 @@ public class HandClassifier {
         float maxY = 0;
         for (int i = 0; i < outputSize; i+=2) {
             // Get the min x,y and max x,y to create roi for hand
-            float xCoord = ((float[][])results.get(0))[0][i] * xScale;
-            float yCoord = ((float[][])results.get(0))[0][i+1] * yScale;
+            float xCoord = results[0][i] * xScale;
+            float yCoord = results[0][i+1] * yScale;
             if (xCoord < minX)
                 minX = xCoord;
             if (xCoord > maxX)
@@ -160,7 +145,7 @@ public class HandClassifier {
                 maxY = yCoord;
 
             // Hand keypoints
-            canvas.drawCircle(((float[][])results.get(0))[0][i] * xScale, ((float[][])results.get(0))[0][i+1] * yScale, 10.0f, paint);
+            canvas.drawCircle(xCoord, yCoord, 10.0f, paint);
         }
         Log.d("test", String.valueOf(minX));
         paint.setStyle(Paint.Style.STROKE);
