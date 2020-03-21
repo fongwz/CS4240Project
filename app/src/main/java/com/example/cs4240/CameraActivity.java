@@ -126,7 +126,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         imView.setImageBitmap(overlayBmp);
 
         try {
-            classifier = new HandClassifier(this, "hand_landmark.tflite", 42);
+            classifier = new HandClassifier(this, "palm.tflite");
         } catch (IOException e) {
             e.printStackTrace();
         }

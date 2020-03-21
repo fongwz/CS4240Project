@@ -12,8 +12,8 @@ import android.widget.ImageView;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int test_img = R.drawable.test_img;
-    private static final String model_file = "hand_landmark.tflite";
+    private static final int test_img = R.drawable.clench2;
+    private static final String model_file = "palm.tflite";
 
     private HandClassifier classifier;
 
@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
             Bitmap bmp = BitmapFactory.decodeResource(this.getResources(), test_img);
             Bitmap newBmp = bmp.copy(android.graphics.Bitmap.Config.ARGB_8888, true);
 
-            //classifier = new HandClassifier(this, model_file, 42);
+            classifier = new HandClassifier(this, model_file);
             //classifier.predict(bmp);
         } catch (Exception e) {
             e.printStackTrace();
@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
     public void setImage() {
         Bitmap bmp = BitmapFactory.decodeResource(this.getResources(), test_img);
         Bitmap newBmp = bmp.copy(android.graphics.Bitmap.Config.ARGB_8888, true);
-        this.classifier.label(newBmp);
+        //this.classifier.label(newBmp);
         //ImageView imView = (ImageView)findViewById(R.id.im_view);
         //imView.setImageBitmap(newBmp);
     }

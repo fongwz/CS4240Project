@@ -11,6 +11,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.google.android.gms.common.GooglePlayServicesUtilLight;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -26,15 +27,25 @@ import com.google.firebase.ml.custom.FirebaseModelInputs;
 import com.google.firebase.ml.custom.FirebaseModelInterpreter;
 import com.google.firebase.ml.custom.FirebaseModelInterpreterOptions;
 import com.google.firebase.ml.custom.FirebaseModelOutputs;
+import com.opencsv.CSVReader;
 
+import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
 import org.tensorflow.lite.Interpreter;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,21 +58,39 @@ public class HandClassifier {
     private static final int IMAGE_MEAN = 128;
     private static final float IMAGE_STD = 128.0f;
 
-    private int outputSize;
     private FirebaseModelInterpreter interpreter;
     private FirebaseModelInputOutputOptions inputOutputOptions;
     private Activity parentActivity;
     private float[][] results;
-    private float[][] results2;
+    private float[][][] res_clf;
+    private boolean[] clf_mask;
+    private float[][][] res_reg;
+    private ArrayList<float[]> detectionCandidates;
     private ByteBuffer byteBuffer;
+
+    private CSVReader csvReader;
+    private ArrayList<float[]> anchors;
+    private ArrayList<float[]> anchorCandidates;
+
+    private float dx;
+    private float dy;
+    private float w;
+    private float h;
+    private float cx;
+    private float cy;
 
     private long startTime;
 
-    public HandClassifier(Activity activity, String model, int outputSize) throws IOException {
-        this.outputSize = outputSize;
+    public HandClassifier(Activity activity, String model) throws IOException {
         this.parentActivity = activity;
         this.results = null;
         this.byteBuffer = ByteBuffer.allocateDirect(4 * BATCH_SIZE * inputSize * inputSize * PIXEL_SIZE);
+        this.detectionCandidates = new ArrayList<>();
+        this.clf_mask = new boolean[2944];
+        this.csvReader = new CSVReader(new BufferedReader(new InputStreamReader(activity.getAssets().open("anchors.csv"))));
+        this.anchors = new ArrayList<>();
+        this.anchorCandidates = new ArrayList<>();
+        loadAnchors();
 
         FirebaseCustomLocalModel localModel = new FirebaseCustomLocalModel.Builder()
                 .setAssetFilePath(model)
@@ -74,8 +103,8 @@ public class HandClassifier {
             inputOutputOptions =
                     new FirebaseModelInputOutputOptions.Builder()
                             .setInputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 256, 256, 3})
-                            .setOutputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 42})
-                            .setOutputFormat(1, FirebaseModelDataType.FLOAT32, new int[]{1, 1})
+                            .setOutputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 2944, 18})
+                            .setOutputFormat(1, FirebaseModelDataType.FLOAT32, new int[]{1, 2944, 1})
                             .build();
         } catch (FirebaseMLException e) {
             e.printStackTrace();
@@ -83,8 +112,6 @@ public class HandClassifier {
     }
 
     public void predict(Bitmap image) throws FirebaseMLException {
-        startTime = System.nanoTime();
-
         FirebaseModelInputs inputs = new FirebaseModelInputs.Builder()
                 .add(convertBitmapToByteBuffer(image))  // add() as many input arrays as your model requires
                 .build();
@@ -93,15 +120,17 @@ public class HandClassifier {
                         new OnSuccessListener<FirebaseModelOutputs>() {
                             @Override
                             public void onSuccess(FirebaseModelOutputs result) {
-                                Log.d("test", "success");
-                                results = result.getOutput(0);
-                                results2 = result.getOutput(1);
-                                Log.d("test", "opop: " + String.valueOf(results2[0][0]));
+                                startTime = System.nanoTime();
+                                getDetections(result);
+                                //((MainActivity)parentActivity).setImage();
+                                ((CameraActivity)parentActivity).setImage();
+                                //results2 = result.getOutput(1);
+                                //Log.d("test", "opop: " + String.valueOf(results2[0][0]));
                                 long endTime = System.nanoTime();
                                 long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
-                                Log.d("test", "Time taken to predict: " + String.valueOf(duration/1000000) + "ms");
-                                if (results2[0][0] >= 0.9)
-                                    ((CameraActivity)parentActivity).setImage();
+                                //Log.d("test", "Time taken to process results: " + String.valueOf(duration/1000000) + "ms");
+                                //if (results2[0][0] >= 0.9)
+                                //    ((CameraActivity)parentActivity).setImage();
                             }
                         })
                 .addOnFailureListener(
@@ -115,6 +144,7 @@ public class HandClassifier {
 
     public void label(Bitmap image) {
 
+        /* Labelling method for hand_landmark
         if (results[0][0] < 0.3) {
             return;
         }
@@ -130,7 +160,7 @@ public class HandClassifier {
         float minY = 9999;
         float maxX = 0;
         float maxY = 0;
-        for (int i = 0; i < outputSize; i+=2) {
+        for (int i = 0; i < 42; i+=2) {
             // Get the min x,y and max x,y to create roi for hand
             float xCoord = results[0][i] * xScale;
             float yCoord = results[0][i+1] * yScale;
@@ -152,6 +182,25 @@ public class HandClassifier {
         paint.setStrokeWidth(15.0f);
         paint.setColor(Color.WHITE);
         canvas.drawRect(minX -50, minY-50, maxX+50, maxY+50, paint);
+         */
+
+        /*
+        Labelling method for palm
+         */
+        if (detectionCandidates.size() <= 0) {
+            return;
+        }
+
+        float xScale = image.getWidth() / (float)inputSize;
+        float yScale = image.getHeight() / (float)inputSize;
+
+        Paint paint = new Paint();
+        paint.setColor(Color.RED);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(5.0f);
+
+        Canvas canvas = new Canvas(image);
+        canvas.drawRect((cx-w-dx), (cy-h-dy), (cx+w-dx), (cy+h-dy), paint);
     }
 
     private MappedByteBuffer loadModelFile(Activity activity,String MODEL_FILE) throws IOException {
@@ -161,6 +210,22 @@ public class HandClassifier {
         long startOffset = fileDescriptor.getStartOffset();
         long declaredLength = fileDescriptor.getDeclaredLength();
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
+    }
+
+    private void loadAnchors() {
+        String[] nextLine;
+        try {
+            while ((nextLine = csvReader.readNext()) != null) {
+                anchors.add(new float[]{
+                        Float.valueOf(nextLine[0]),
+                        Float.valueOf(nextLine[1]),
+                        Float.valueOf(nextLine[2]),
+                        Float.valueOf(nextLine[3])
+                });
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private ByteBuffer convertBitmapToByteBuffer(Bitmap bitmap) {
@@ -181,7 +246,65 @@ public class HandClassifier {
         return byteBuffer;
     }
 
+    public void getDetections(FirebaseModelOutputs firebaseResults) {
+        res_reg = firebaseResults.getOutput(0);
+        res_clf = firebaseResults.getOutput(1);
+
+        detectionCandidates.clear();
+        anchorCandidates.clear();
+
+        createDetectionMask();
+        createFilteredDetections();
+        int maxIdx = argMax(detectionCandidates, 3);
+
+        if (detectionCandidates.size() <= 0) {
+            return;
+        }
+
+        dx = detectionCandidates.get(maxIdx)[0];
+        dy = detectionCandidates.get(maxIdx)[1];
+        w = detectionCandidates.get(maxIdx)[2];
+        h = detectionCandidates.get(maxIdx)[3];
+
+        cx = anchorCandidates.get(maxIdx)[0] * 256;
+        cy = anchorCandidates.get(maxIdx)[1] * 256;
+
+        Log.d("test", dx + " : " + dy + " : " + w + " : " + h + " : " + cx + " : " + cy);
+    }
+
+    public void createDetectionMask() {
+        for (int i = 0 ; i < res_clf[0].length; i++) {
+            clf_mask[i] = getSigM(res_clf[0][i][0]) > 0.7;
+        }
+    }
+
+    public void createFilteredDetections() {
+        for (int i = 0; i < res_reg[0].length; i++) {
+            if (clf_mask[i]) {
+                detectionCandidates.add(res_reg[0][i]);
+                anchorCandidates.add(anchors.get(i));
+            }
+        }
+    }
+
     public float getSigM(float x) {
         return (float) ((float) 1 / (1 + Math.exp(-x)));
+    }
+
+
+    /*
+    Argmax for a specific index in a 2d array
+     */
+    public int argMax(ArrayList<float[]> array, int arrayIndexSelector) {
+        int idx = 0;
+        float currMax = -999;
+        for (int i = 0 ; i < array.size(); i++) {
+            if (array.get(i)[arrayIndexSelector] > currMax) {
+                idx = i;
+                currMax = array.get(i)[arrayIndexSelector];
+            }
+        }
+
+        return idx;
     }
 }
