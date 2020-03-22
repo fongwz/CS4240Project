@@ -266,8 +266,8 @@ public class HandClassifier {
         w = detectionCandidates.get(maxIdx)[2];
         h = detectionCandidates.get(maxIdx)[3];
 
-        cx = anchorCandidates.get(maxIdx)[0] * 256;
-        cy = anchorCandidates.get(maxIdx)[1] * 256;
+        cx = anchorCandidates.get(maxIdx)[0] * 720; //256
+        cy = anchorCandidates.get(maxIdx)[1] * 720; //256
 
         Log.d("test", dx + " : " + dy + " : " + w + " : " + h + " : " + cx + " : " + cy);
     }

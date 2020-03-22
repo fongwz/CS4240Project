@@ -128,7 +128,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         float dpWidth = displayMetrics.widthPixels / displayMetrics.density;
         float height = (dpWidth *1280)/720;
         overlayBmp = Bitmap.createBitmap(720,1280, Bitmap.Config.ARGB_8888);
-        overlayBmp=Bitmap.createScaledBitmap(overlayBmp, 720 , (int)height, true);
+        overlayBmp = Bitmap.createScaledBitmap(overlayBmp, 720 , (int)height, true);
 
         ImageView imView = (ImageView)findViewById(R.id.im_view);
         imView.setImageBitmap(overlayBmp);
