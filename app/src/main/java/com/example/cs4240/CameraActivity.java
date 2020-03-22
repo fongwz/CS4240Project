@@ -118,10 +118,10 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         mOpenCvCameraView = (JavaCameraView) findViewById(R.id.cv_camera_view);
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
-        mOpenCvCameraView.setMinimumWidth(1440); //doesn't seem to work
-        mOpenCvCameraView.setMinimumHeight(1080);
-        mOpenCvCameraView.setMaxFrameSize(1440, 1080);
-        overlayBmp = Bitmap.createBitmap(1440, 1080, Bitmap.Config.ARGB_8888);
+        mOpenCvCameraView.setMinimumWidth(720); //doesn't seem to work
+        mOpenCvCameraView.setMinimumHeight(1280);
+        mOpenCvCameraView.setMaxFrameSize(720,1280);
+        overlayBmp = Bitmap.createBitmap(720,1820, Bitmap.Config.ARGB_8888);
         ImageView imView = (ImageView)findViewById(R.id.im_view);
         imView.setImageBitmap(overlayBmp);
 
