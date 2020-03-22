@@ -27,6 +27,7 @@ import android.media.ImageReader;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Size;
 import android.view.MenuItem;
@@ -121,10 +122,16 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         mOpenCvCameraView.setMinimumWidth(720); //doesn't seem to work
         mOpenCvCameraView.setMinimumHeight(1280);
         mOpenCvCameraView.setMaxFrameSize(720,1280);
-        overlayBmp = Bitmap.createBitmap(720,1820, Bitmap.Config.ARGB_8888);
+
+        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
+        float dpHeight = displayMetrics.heightPixels / displayMetrics.density;
+        float dpWidth = displayMetrics.widthPixels / displayMetrics.density;
+        float height = (dpWidth *1280)/720;
+        overlayBmp = Bitmap.createBitmap(720,1280, Bitmap.Config.ARGB_8888);
+        overlayBmp=Bitmap.createScaledBitmap(overlayBmp, 720 , (int)height, true);
+
         ImageView imView = (ImageView)findViewById(R.id.im_view);
         imView.setImageBitmap(overlayBmp);
-
         try {
             classifier = new HandClassifier(this, "palm.tflite");
         } catch (IOException e) {
@@ -168,7 +175,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         }
         // Rotate mRgba 90 degrees
         Core.transpose(mRgba, mRgbaT);
-        Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 1900,1080, 0);
+        Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 720,1280, 0);
         Core.flip(mRgbaF, mRgba, 1 );
 
         Utils.matToBitmap(mRgba, bmp);
