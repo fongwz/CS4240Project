@@ -194,13 +194,16 @@ public class HandClassifier {
         float xScale = image.getWidth() / (float)inputSize;
         float yScale = image.getHeight() / (float)inputSize;
 
+        float newW = yScale * w;
+        float newH = xScale * h;
+
         Paint paint = new Paint();
         paint.setColor(Color.RED);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(5.0f);
 
         Canvas canvas = new Canvas(image);
-        canvas.drawRect((cx-w-dx), (cy-h-dy), (cx+w-dx), (cy+h-dy), paint);
+        canvas.drawRect((cx-newW-dx), (cy-newH-dy), (cx+newW-dx), (cy+newH-dy), paint); //left, top, right, bottom
     }
 
     private MappedByteBuffer loadModelFile(Activity activity,String MODEL_FILE) throws IOException {
