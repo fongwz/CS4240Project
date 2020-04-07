@@ -1,0 +1,231 @@
+package com.example.cs4240;
+
+import android.app.Activity;
+import android.content.res.AssetFileDescriptor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.ml.common.FirebaseMLException;
+import com.google.firebase.ml.custom.FirebaseCustomLocalModel;
+import com.google.firebase.ml.custom.FirebaseModelDataType;
+import com.google.firebase.ml.custom.FirebaseModelInputOutputOptions;
+import com.google.firebase.ml.custom.FirebaseModelInputs;
+import com.google.firebase.ml.custom.FirebaseModelInterpreter;
+import com.google.firebase.ml.custom.FirebaseModelInterpreterOptions;
+import com.google.firebase.ml.custom.FirebaseModelOutputs;
+import com.opencsv.CSVReader;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+public class SignClassifier {
+
+    private static final int inputSize = 70;
+    private static final int BATCH_SIZE = 1;
+    private static final int PIXEL_SIZE = 1;
+
+    private static final int IMAGE_MEAN = 128;
+    private static final float IMAGE_STD = 128.0f;
+
+    private FirebaseModelInterpreter interpreter;
+    private FirebaseModelInputOutputOptions inputOutputOptions;
+    private Activity parentActivity;
+    private float[][] results;
+    private float[][][] res_clf;
+    private boolean[] clf_mask;
+    private float[][][] res_reg;
+    private ArrayList<float[]> detectionCandidates;
+    private ByteBuffer byteBuffer;
+
+    private CSVReader csvReader;
+    private ArrayList<float[]> anchors;
+    private ArrayList<float[]> anchorCandidates;
+
+    private float dx;
+    private float dy;
+    private float w;
+    private float h;
+    private float cx;
+    private float cy;
+
+    public SignClassifier(Activity activity, String model) throws IOException {
+        this.parentActivity = activity;
+        this.results = null;
+        this.byteBuffer = ByteBuffer.allocateDirect(4 * BATCH_SIZE * inputSize * inputSize * PIXEL_SIZE);
+        this.detectionCandidates = new ArrayList<>();
+        this.clf_mask = new boolean[2944];
+        this.csvReader = new CSVReader(new BufferedReader(new InputStreamReader(activity.getAssets().open("anchors.csv"))));
+        this.anchors = new ArrayList<>();
+        this.anchorCandidates = new ArrayList<>();
+        loadAnchors();
+
+        FirebaseCustomLocalModel localModel = new FirebaseCustomLocalModel.Builder()
+                .setAssetFilePath(model)
+                .build();
+        try {
+            FirebaseModelInterpreterOptions options =
+                    new FirebaseModelInterpreterOptions.Builder(localModel).build();
+            interpreter = FirebaseModelInterpreter.getInstance(options);
+
+            inputOutputOptions =
+                    new FirebaseModelInputOutputOptions.Builder()
+                            .setInputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 256, 256, 3})
+                            .setOutputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 2944, 18})
+                            .setOutputFormat(1, FirebaseModelDataType.FLOAT32, new int[]{1, 2944, 1})
+                            .build();
+        } catch (FirebaseMLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void predict(Bitmap image) throws FirebaseMLException {
+        FirebaseModelInputs inputs = new FirebaseModelInputs.Builder()
+                .add(convertBitmapToByteBuffer(image))  // add() as many input arrays as your model requires
+                .build();
+        interpreter.run(inputs, inputOutputOptions)
+                .addOnSuccessListener(
+                        new OnSuccessListener<FirebaseModelOutputs>() {
+                            @Override
+                            public void onSuccess(FirebaseModelOutputs result) {
+                                //getDetections(result); //post processing
+                                ((CameraActivity)parentActivity).setImage();
+                            }
+                        })
+                .addOnFailureListener(
+                        new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
+    }
+
+    public void label(Bitmap image) {
+        /*
+        Labelling method for signs
+         */
+        if (detectionCandidates.size() <= 0) {
+            return;
+        }
+
+//        float xScale = image.getWidth() / (float)inputSize;
+//        float yScale = image.getHeight() / (float)inputSize;
+//
+//        float newW = yScale * w;
+//        float newH = xScale * h;
+//
+//        Paint paint = new Paint();
+//        paint.setColor(Color.RED);
+//        paint.setStyle(Paint.Style.STROKE);
+//        paint.setStrokeWidth(5.0f);
+//
+        Canvas canvas = new Canvas(image);
+        //canvas.drawRect((cx-newW-dx), (cy-newH-dy), (cx+newW-dx), (cy+newH-dy), paint); //left, top, right, bottom
+    }
+
+    private void loadAnchors() {
+        String[] nextLine;
+        try {
+            while ((nextLine = csvReader.readNext()) != null) {
+                anchors.add(new float[]{
+                        Float.valueOf(nextLine[0]),
+                        Float.valueOf(nextLine[1]),
+                        Float.valueOf(nextLine[2]),
+                        Float.valueOf(nextLine[3])
+                });
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private ByteBuffer convertBitmapToByteBuffer(Bitmap bitmap) {
+        byteBuffer.clear();
+        byteBuffer.order(ByteOrder.nativeOrder());
+        int[] intValues = new int[inputSize * inputSize];
+        bitmap = Bitmap.createScaledBitmap(bitmap, inputSize, inputSize, false);
+        bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+        int pixel = 0;
+        for (int i = 0; i < inputSize; ++i) {
+            for (int j = 0; j < inputSize; ++j) {
+                final int val = intValues[pixel++];
+                byteBuffer.putFloat((((val >> 16) & 0xFF)-IMAGE_MEAN)/IMAGE_STD);
+                byteBuffer.putFloat((((val >> 8) & 0xFF)-IMAGE_MEAN)/IMAGE_STD);
+                byteBuffer.putFloat((((val) & 0xFF)-IMAGE_MEAN)/IMAGE_STD);
+            }
+        }
+        return byteBuffer;
+    }
+
+//    private void getDetections(FirebaseModelOutputs firebaseResults) {
+//        res_reg = firebaseResults.getOutput(0);
+//        res_clf = firebaseResults.getOutput(1);
+//
+//        detectionCandidates.clear();
+//        anchorCandidates.clear();
+//
+//        createDetectionMask();
+//        createFilteredDetections();
+//        int maxIdx = argMax(detectionCandidates, 3);
+//
+//        if (detectionCandidates.size() <= 0) {
+//            return;
+//        }
+//
+//        dx = detectionCandidates.get(maxIdx)[0];
+//        dy = detectionCandidates.get(maxIdx)[1];
+//        w = detectionCandidates.get(maxIdx)[2];
+//        h = detectionCandidates.get(maxIdx)[3];
+//
+//        cx = anchorCandidates.get(maxIdx)[0] * 720; //256
+//        cy = anchorCandidates.get(maxIdx)[1] * 720; //256
+//
+//        Log.d("test", dx + " : " + dy + " : " + w + " : " + h + " : " + cx + " : " + cy);
+//    }
+//
+//    public void createDetectionMask() {
+//        for (int i = 0 ; i < res_clf[0].length; i++) {
+//            clf_mask[i] = getSigM(res_clf[0][i][0]) > 0.7;
+//        }
+//    }
+//
+//    public float getSigM(float x) {
+//        return (float) ((float) 1 / (1 + Math.exp(-x)));
+//    }
+//
+//    public void createFilteredDetections() {
+//        for (int i = 0; i < res_reg[0].length; i++) {
+//            if (clf_mask[i]) {
+//                detectionCandidates.add(res_reg[0][i]);
+//                anchorCandidates.add(anchors.get(i));
+//            }
+//        }
+//    }
+//
+//    /*
+//    Argmax for a specific index in a 2d array
+//     */
+//    public int argMax(ArrayList<float[]> array, int arrayIndexSelector) {
+//        int idx = 0;
+//        float currMax = -999;
+//        for (int i = 0 ; i < array.size(); i++) {
+//            if (array.get(i)[arrayIndexSelector] > currMax) {
+//                idx = i;
+//                currMax = array.get(i)[arrayIndexSelector];
+//            }
+//        }
+//
+//        return idx;
+//    }
+}

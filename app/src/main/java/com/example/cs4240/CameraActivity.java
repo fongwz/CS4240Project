@@ -1,6 +1,5 @@
 package com.example.cs4240;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -10,30 +9,18 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.ImageFormat;
-import android.graphics.SurfaceTexture;
-import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.Image;
 import android.media.ImageReader;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.HandlerThread;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Size;
 import android.view.MenuItem;
-import android.view.Surface;
 import android.view.SurfaceView;
-import android.view.TextureView;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -47,17 +34,11 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
-import org.opencv.core.CvException;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 public class CameraActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -98,7 +79,8 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     private Bitmap overlayBmp;
     private boolean initBmp = false;
     private static final int CAMERA_PERMISSION = 555;
-    private HandClassifier classifier;
+    private HandClassifier handClassifier;
+    private SignClassifier signClassifier;
 
     private CameraCharacteristics cameraCharacteristics;
     private CameraManager manager;
@@ -133,7 +115,13 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         ImageView imView = (ImageView)findViewById(R.id.im_view);
         imView.setImageBitmap(overlayBmp);
         try {
-            classifier = new HandClassifier(this, "palm.tflite");
+            handClassifier = new HandClassifier(this, "palm.tflite");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            signClassifier = new SignClassifier(this, "");  //insert path name
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -182,7 +170,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         overlayBmp.eraseColor(Color.TRANSPARENT);
 
         try {
-            classifier.predict(bmp);
+            handClassifier.predict(bmp);
         } catch (FirebaseMLException e) {
             e.printStackTrace();
         }
@@ -190,7 +178,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     }
 
     public void setImage() {
-        this.classifier.label(overlayBmp);
+        this.handClassifier.label(overlayBmp);
         ImageView imView = (ImageView)findViewById(R.id.im_view);
         imView.setImageBitmap(overlayBmp);
     }
