@@ -29,6 +29,8 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
+
 public class SignClassifier {
 
     private static final int inputSize = 70;
@@ -42,9 +44,9 @@ public class SignClassifier {
     private FirebaseModelInputOutputOptions inputOutputOptions;
     private Activity parentActivity;
     private float[][] results;
-    private float[][][] res_clf;
+    private float[][] res_clf;
     private boolean[] clf_mask;
-    private float[][][] res_reg;
+    private float[][] res_reg;
     private ArrayList<float[]> detectionCandidates;
     private ByteBuffer byteBuffer;
 
@@ -58,6 +60,8 @@ public class SignClassifier {
     private float h;
     private float cx;
     private float cy;
+
+    private String displayText = "";
 
     public SignClassifier(Activity activity, String model) throws IOException {
         this.parentActivity = activity;
@@ -80,9 +84,10 @@ public class SignClassifier {
 
             inputOutputOptions =
                     new FirebaseModelInputOutputOptions.Builder()
-                            .setInputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 256, 256, 3})
-                            .setOutputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 2944, 18})
-                            .setOutputFormat(1, FirebaseModelDataType.FLOAT32, new int[]{1, 2944, 1})
+                            .setInputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, inputSize, inputSize, PIXEL_SIZE})
+//                            .setOutputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 2944, 18})
+//                            .setOutputFormat(1, FirebaseModelDataType.FLOAT32, new int[]{1, 2944, 1})
+                            .setOutputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 29})
                             .build();
         } catch (FirebaseMLException e) {
             e.printStackTrace();
@@ -98,8 +103,9 @@ public class SignClassifier {
                         new OnSuccessListener<FirebaseModelOutputs>() {
                             @Override
                             public void onSuccess(FirebaseModelOutputs result) {
-                                //getDetections(result); //post processing
-                                ((CameraActivity)parentActivity).setImage();
+                                Log.d("test", "sign reading success");
+                                getDetections(result); //post processing
+                                //((CameraActivity)parentActivity).setTextImage();
                             }
                         })
                 .addOnFailureListener(
@@ -119,19 +125,19 @@ public class SignClassifier {
             return;
         }
 
-//        float xScale = image.getWidth() / (float)inputSize;
-//        float yScale = image.getHeight() / (float)inputSize;
-//
-//        float newW = yScale * w;
-//        float newH = xScale * h;
-//
-//        Paint paint = new Paint();
-//        paint.setColor(Color.RED);
-//        paint.setStyle(Paint.Style.STROKE);
-//        paint.setStrokeWidth(5.0f);
-//
+        float xScale = image.getWidth() / (float)inputSize;
+        float yScale = image.getHeight() / (float)inputSize;
+
+        float newW = yScale * w;
+        float newH = xScale * h;
+
         Canvas canvas = new Canvas(image);
-        //canvas.drawRect((cx-newW-dx), (cy-newH-dy), (cx+newW-dx), (cy+newH-dy), paint); //left, top, right, bottom
+
+        Paint paint = new Paint();
+
+        paint.setColor(Color.WHITE);
+        paint.setTextSize(20);
+        canvas.drawText(displayText, 10, 25, paint);
     }
 
     private void loadAnchors() {
@@ -154,27 +160,32 @@ public class SignClassifier {
         byteBuffer.clear();
         byteBuffer.order(ByteOrder.nativeOrder());
         int[] intValues = new int[inputSize * inputSize];
-        bitmap = Bitmap.createScaledBitmap(bitmap, inputSize, inputSize, false);
+        bitmap = Bitmap.createScaledBitmap(bitmap, inputSize, inputSize, true);
         bitmap.getPixels(intValues, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+
         int pixel = 0;
         for (int i = 0; i < inputSize; ++i) {
             for (int j = 0; j < inputSize; ++j) {
                 final int val = intValues[pixel++];
-                byteBuffer.putFloat((((val >> 16) & 0xFF)-IMAGE_MEAN)/IMAGE_STD);
-                byteBuffer.putFloat((((val >> 8) & 0xFF)-IMAGE_MEAN)/IMAGE_STD);
-                byteBuffer.putFloat((((val) & 0xFF)-IMAGE_MEAN)/IMAGE_STD);
+//                byteBuffer.putFloat((((val >> 16) & 0xFF)-IMAGE_MEAN)/IMAGE_STD);
+//                byteBuffer.putFloat((((val >> 8) & 0xFF)-IMAGE_MEAN)/IMAGE_STD);
+//                byteBuffer.putFloat((((val) & 0xFF)-IMAGE_MEAN)/IMAGE_STD);
+                byteBuffer.putFloat((val-IMAGE_MEAN)/IMAGE_STD);
             }
         }
         return byteBuffer;
     }
 
-//    private void getDetections(FirebaseModelOutputs firebaseResults) {
-//        res_reg = firebaseResults.getOutput(0);
+    private void getDetections(FirebaseModelOutputs firebaseResults) {
+        res_reg = firebaseResults.getOutput(0);
 //        res_clf = firebaseResults.getOutput(1);
-//
-//        detectionCandidates.clear();
-//        anchorCandidates.clear();
-//
+
+        detectionCandidates.clear();
+        anchorCandidates.clear();
+
+        Log.d("test", Arrays.deepToString(res_reg));
+//        Log.d("test", "post processing sign model output");
+
 //        createDetectionMask();
 //        createFilteredDetections();
 //        int maxIdx = argMax(detectionCandidates, 3);
@@ -192,7 +203,7 @@ public class SignClassifier {
 //        cy = anchorCandidates.get(maxIdx)[1] * 720; //256
 //
 //        Log.d("test", dx + " : " + dy + " : " + w + " : " + h + " : " + cx + " : " + cy);
-//    }
+    }
 //
 //    public void createDetectionMask() {
 //        for (int i = 0 ; i < res_clf[0].length; i++) {

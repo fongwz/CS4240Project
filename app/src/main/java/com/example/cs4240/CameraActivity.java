@@ -121,7 +121,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         }
 
         try {
-            signClassifier = new SignClassifier(this, "");  //insert path name
+            signClassifier = new SignClassifier(this, "converted_model.tflite");  //insert path name
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -169,6 +169,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         Utils.matToBitmap(mRgba, bmp);
         overlayBmp.eraseColor(Color.TRANSPARENT);
 
+
         try {
             handClassifier.predict(bmp);
         } catch (FirebaseMLException e) {
@@ -177,10 +178,40 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         return mRgba; // This function must return
     }
 
+    public Bitmap getBitmap() {
+        return bmp;
+    }
+
+    public void predictSign(int x, int y, int w, int h){
+
+        if (w <= 0 || h <= 0) {
+            return;
+        }
+
+        if (x <= 0 || y <= 0) {
+            return;
+        }
+
+        Log.d("parameters", x + " : " + y + " : " + w + " : " + h);
+        Bitmap roi = Bitmap.createBitmap(bmp, x, y, w, h);
+
+        try {
+            signClassifier.predict(roi);
+        } catch (FirebaseMLException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void setImage() {
         this.handClassifier.label(overlayBmp);
         ImageView imView = (ImageView)findViewById(R.id.im_view);
         imView.setImageBitmap(overlayBmp);
+    }
+
+    public void setTextImage() {
+        this.signClassifier.label(overlayBmp);
+        ImageView imageView = (ImageView)findViewById(R.id.im_view);
+        imageView.setImageBitmap(overlayBmp);
     }
 
     @Override

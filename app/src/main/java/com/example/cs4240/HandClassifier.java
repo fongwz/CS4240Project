@@ -3,7 +3,6 @@ package com.example.cs4240;
 import android.app.Activity;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -11,16 +10,10 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.google.android.gms.common.GooglePlayServicesUtilLight;
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.ml.common.FirebaseMLException;
-import com.google.firebase.ml.common.modeldownload.FirebaseModelDownloadConditions;
-import com.google.firebase.ml.common.modeldownload.FirebaseModelManager;
 import com.google.firebase.ml.custom.FirebaseCustomLocalModel;
-import com.google.firebase.ml.custom.FirebaseCustomRemoteModel;
 import com.google.firebase.ml.custom.FirebaseModelDataType;
 import com.google.firebase.ml.custom.FirebaseModelInputOutputOptions;
 import com.google.firebase.ml.custom.FirebaseModelInputs;
@@ -29,25 +22,15 @@ import com.google.firebase.ml.custom.FirebaseModelInterpreterOptions;
 import com.google.firebase.ml.custom.FirebaseModelOutputs;
 import com.opencsv.CSVReader;
 
-import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
-import org.opencv.core.Mat;
-import org.opencv.imgproc.Imgproc;
-import org.tensorflow.lite.Interpreter;
-
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 public class HandClassifier {
 
@@ -78,6 +61,12 @@ public class HandClassifier {
     private float h;
     private float cx;
     private float cy;
+
+    private int x;
+    private int y;
+    private int width;
+    private int height;
+
 
     private long startTime;
 
@@ -120,14 +109,12 @@ public class HandClassifier {
                         new OnSuccessListener<FirebaseModelOutputs>() {
                             @Override
                             public void onSuccess(FirebaseModelOutputs result) {
-                                startTime = System.nanoTime();
                                 getDetections(result);
                                 //((MainActivity)parentActivity).setImage();
+                                calculateParameters(((CameraActivity)parentActivity).getBitmap());
+                                ((CameraActivity)parentActivity).predictSign(x, y, width, height);
                                 ((CameraActivity)parentActivity).setImage();
                                 //results2 = result.getOutput(1);
-                                //Log.d("test", "opop: " + String.valueOf(results2[0][0]));
-                                long endTime = System.nanoTime();
-                                long duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
                                 //Log.d("test", "Time taken to process results: " + String.valueOf(duration/1000000) + "ms");
                                 //if (results2[0][0] >= 0.9)
                                 //    ((CameraActivity)parentActivity).setImage();
@@ -206,6 +193,19 @@ public class HandClassifier {
         canvas.drawRect((cx-newW-dx), (cy-newH-dy), (cx+newW-dx), (cy+newH-dy), paint); //left, top, right, bottom
     }
 
+    private void calculateParameters(Bitmap image) {
+        if (detectionCandidates.size() <= 0) {
+            return;
+        }
+        float xScale = image.getWidth() / (float)inputSize;
+        float yScale = image.getHeight() / (float)inputSize;
+
+        this.width = (int)(xScale * w);
+        this.height = (int)(yScale * h);
+        this.x = (int)(cx-width-dx);
+        this.y = (int)(cy-height-dy);
+    }
+
     private MappedByteBuffer loadModelFile(Activity activity,String MODEL_FILE) throws IOException {
         AssetFileDescriptor fileDescriptor = activity.getAssets().openFd(MODEL_FILE);
         FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
@@ -272,7 +272,7 @@ public class HandClassifier {
         cx = anchorCandidates.get(maxIdx)[0] * 720; //256
         cy = anchorCandidates.get(maxIdx)[1] * 720; //256
 
-        Log.d("test", dx + " : " + dy + " : " + w + " : " + h + " : " + cx + " : " + cy);
+        Log.d("detection result", dx + " : " + dy + " : " + w + " : " + h + " : " + cx + " : " + cy);
     }
 
     public void createDetectionMask() {
