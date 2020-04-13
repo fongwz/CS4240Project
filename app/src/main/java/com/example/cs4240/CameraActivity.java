@@ -121,7 +121,8 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         }
 
         try {
-            signClassifier = new SignClassifier(this, "converted_model.tflite");  //insert path name
+//            signClassifier = new SignClassifier(this, "sign_detection.tflite");
+            signClassifier = new SignClassifier(this, "sign_detection_with_numbers.tflite");
         } catch (IOException e) {
             e.printStackTrace();
         }

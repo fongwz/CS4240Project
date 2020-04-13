@@ -47,7 +47,6 @@ public class SignClassifier {
     private float[][] res_clf;
     private boolean[] clf_mask;
     private float[][] res_reg;
-    private ArrayList<float[]> detectionCandidates;
     private ByteBuffer byteBuffer;
 
     private CSVReader csvReader;
@@ -62,17 +61,18 @@ public class SignClassifier {
     private float cy;
 
     private String displayText = "";
+    private String[] textArr;
 
     public SignClassifier(Activity activity, String model) throws IOException {
         this.parentActivity = activity;
         this.results = null;
         this.byteBuffer = ByteBuffer.allocateDirect(4 * BATCH_SIZE * inputSize * inputSize * PIXEL_SIZE);
-        this.detectionCandidates = new ArrayList<>();
         this.clf_mask = new boolean[2944];
         this.csvReader = new CSVReader(new BufferedReader(new InputStreamReader(activity.getAssets().open("anchors.csv"))));
         this.anchors = new ArrayList<>();
         this.anchorCandidates = new ArrayList<>();
         loadAnchors();
+        initTextArr();
 
         FirebaseCustomLocalModel localModel = new FirebaseCustomLocalModel.Builder()
                 .setAssetFilePath(model)
@@ -87,7 +87,7 @@ public class SignClassifier {
                             .setInputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, inputSize, inputSize, PIXEL_SIZE})
 //                            .setOutputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 2944, 18})
 //                            .setOutputFormat(1, FirebaseModelDataType.FLOAT32, new int[]{1, 2944, 1})
-                            .setOutputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 29})
+                            .setOutputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 39})
                             .build();
         } catch (FirebaseMLException e) {
             e.printStackTrace();
@@ -105,7 +105,7 @@ public class SignClassifier {
                             public void onSuccess(FirebaseModelOutputs result) {
                                 Log.d("test", "sign reading success");
                                 getDetections(result); //post processing
-                                //((CameraActivity)parentActivity).setTextImage();
+                                ((CameraActivity)parentActivity).setTextImage();
                             }
                         })
                 .addOnFailureListener(
@@ -121,22 +121,13 @@ public class SignClassifier {
         /*
         Labelling method for signs
          */
-        if (detectionCandidates.size() <= 0) {
-            return;
-        }
-
-        float xScale = image.getWidth() / (float)inputSize;
-        float yScale = image.getHeight() / (float)inputSize;
-
-        float newW = yScale * w;
-        float newH = xScale * h;
-
         Canvas canvas = new Canvas(image);
 
         Paint paint = new Paint();
 
         paint.setColor(Color.WHITE);
         paint.setTextSize(20);
+        Log.d("test", "displaying " + displayText);
         canvas.drawText(displayText, 10, 25, paint);
     }
 
@@ -180,10 +171,20 @@ public class SignClassifier {
         res_reg = firebaseResults.getOutput(0);
 //        res_clf = firebaseResults.getOutput(1);
 
-        detectionCandidates.clear();
+        Log.d("test", Arrays.deepToString(res_reg));
         anchorCandidates.clear();
 
-        Log.d("test", Arrays.deepToString(res_reg));
+        for (int i = 0; i < res_reg[0].length; i++) {
+            if (res_reg[0][i] == 1.0f) {
+                Log.d("test", "idx: " + i + " : value " + textArr[i]);
+                this.displayText = textArr[i];
+//                if (displayText.isEmpty()){
+//                    displayText.concat(textArr[i]);
+//                } else {
+//                    displayText
+//                }
+            }
+        }
 //        Log.d("test", "post processing sign model output");
 
 //        createDetectionMask();
@@ -193,16 +194,13 @@ public class SignClassifier {
 //        if (detectionCandidates.size() <= 0) {
 //            return;
 //        }
-//
-//        dx = detectionCandidates.get(maxIdx)[0];
-//        dy = detectionCandidates.get(maxIdx)[1];
-//        w = detectionCandidates.get(maxIdx)[2];
-//        h = detectionCandidates.get(maxIdx)[3];
-//
-//        cx = anchorCandidates.get(maxIdx)[0] * 720; //256
-//        cy = anchorCandidates.get(maxIdx)[1] * 720; //256
-//
-//        Log.d("test", dx + " : " + dy + " : " + w + " : " + h + " : " + cx + " : " + cy);
+    }
+
+    private void initTextArr() {
+        textArr = new String[]{"a", "b", "c", "d", "delete", "e", "f", "g", "h", "i",
+                                "j", "k", "l", "m", "n", "nothing", "o", "p", "q", "r",
+                                "s", "space", "t", "u", "v", "w", "x", "y", "z", "0",
+                                "1", "2", "3", "4", "5", "6", "7", "8", "9"};
     }
 //
 //    public void createDetectionMask() {

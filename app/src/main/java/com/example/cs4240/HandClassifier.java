@@ -31,6 +31,7 @@ import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class HandClassifier {
 
@@ -264,6 +265,8 @@ public class HandClassifier {
             return;
         }
 
+//        Log.d("test", "arr size : " + detectionCandidates.size());
+//        Log.d("test", Arrays.deepToString(detectionCandidates.toArray()));
         dx = detectionCandidates.get(maxIdx)[0];
         dy = detectionCandidates.get(maxIdx)[1];
         w = detectionCandidates.get(maxIdx)[2];
@@ -272,7 +275,7 @@ public class HandClassifier {
         cx = anchorCandidates.get(maxIdx)[0] * 720; //256
         cy = anchorCandidates.get(maxIdx)[1] * 720; //256
 
-        Log.d("detection result", dx + " : " + dy + " : " + w + " : " + h + " : " + cx + " : " + cy);
+//        Log.d("detection result", dx + " : " + dy + " : " + w + " : " + h + " : " + cx + " : " + cy);
     }
 
     public void createDetectionMask() {
