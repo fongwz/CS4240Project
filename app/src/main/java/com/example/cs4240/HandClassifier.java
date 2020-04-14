@@ -68,6 +68,8 @@ public class HandClassifier {
     private int width;
     private int height;
 
+    private int counter =0;
+
 
     private long startTime;
 
@@ -186,12 +188,30 @@ public class HandClassifier {
         float newH = xScale * h;
 
         Paint paint = new Paint();
+        Canvas canvas = new Canvas(image);
+
+        paint.setColor(Color.BLACK);
+        canvas.drawCircle(cx, cy, 10.0f, paint); // anchor or center of palm
+        paint.setColor(Color.GREEN);
+
+//        canvas.drawCircle(cx-dx, cy-dy, 10.0f, paint);
+//        canvas.drawCircle(cx-dx, cy+dy, 10.0f, paint);
+//        canvas.drawCircle(cx+dx, cy-dy, 10.0f, paint);
+//        canvas.drawCircle(cx+dx, cy+dy, 10.0f, paint);
+        canvas.drawCircle((cx-newW-dx), (cy-newH-dy), 10.0f, paint);
+
         paint.setColor(Color.RED);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(5.0f);
 
-        Canvas canvas = new Canvas(image);
         canvas.drawRect((cx-newW-dx), (cy-newH-dy), (cx+newW-dx), (cy+newH-dy), paint); //left, top, right, bottom
+
+//        if (counter == 20) {
+//            Bitmap bmp = ((CameraActivity)parentActivity).getBitmap();
+//            Bitmap roi = Bitmap.createBitmap(bmp, x, y, width, height);
+//            canvas.drawBitmap(roi, 0, 0, );
+//            counter = 0;
+//        }
     }
 
     private void calculateParameters(Bitmap image) {

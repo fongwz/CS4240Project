@@ -8,7 +8,9 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -38,7 +40,10 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
 
 public class CameraActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener2 {
 
@@ -126,6 +131,29 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        try {
+            AssetManager am = getAssets();
+            String[] names = am.list("asl_alphabet_test");
+            Log.d("test", Arrays.toString(names));
+            for (String name : names) {
+                InputStream input = am.open("asl_alphabet_test/" + name);
+//                Bitmap image = BitmapFactory.decodeFile(pathname);
+                Bitmap image = BitmapFactory.decodeStream(input);
+                if (image == null) {
+                    Log.d("test", "error creating bitmap");
+                    break;
+                }
+                try {
+                    signClassifier.predict(image);
+                } catch (FirebaseMLException e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (IOException e) {
+            Log.d("test", "cannot read dir");
+            e.printStackTrace();
+        }
     }
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
@@ -171,11 +199,11 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         overlayBmp.eraseColor(Color.TRANSPARENT);
 
 
-        try {
-            handClassifier.predict(bmp);
-        } catch (FirebaseMLException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            handClassifier.predict(bmp);
+//        } catch (FirebaseMLException e) {
+//            e.printStackTrace();
+//        }
         return mRgba; // This function must return
     }
 

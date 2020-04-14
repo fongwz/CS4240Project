@@ -103,15 +103,15 @@ public class SignClassifier {
                         new OnSuccessListener<FirebaseModelOutputs>() {
                             @Override
                             public void onSuccess(FirebaseModelOutputs result) {
-                                Log.d("test", "sign reading success");
                                 getDetections(result); //post processing
-                                ((CameraActivity)parentActivity).setTextImage();
+                                //((CameraActivity)parentActivity).setTextImage();
                             }
                         })
                 .addOnFailureListener(
                         new OnFailureListener() {
                             @Override
                             public void onFailure(@NonNull Exception e) {
+                                Log.d("test", "cannot read image");
                                 e.printStackTrace();
                             }
                         });
@@ -126,9 +126,9 @@ public class SignClassifier {
         Paint paint = new Paint();
 
         paint.setColor(Color.WHITE);
-        paint.setTextSize(20);
+        paint.setTextSize(100);
         Log.d("test", "displaying " + displayText);
-        canvas.drawText(displayText, 10, 25, paint);
+        canvas.drawText(displayText, 100, 100, paint);
     }
 
     private void loadAnchors() {
@@ -162,6 +162,7 @@ public class SignClassifier {
 //                byteBuffer.putFloat((((val >> 8) & 0xFF)-IMAGE_MEAN)/IMAGE_STD);
 //                byteBuffer.putFloat((((val) & 0xFF)-IMAGE_MEAN)/IMAGE_STD);
                 byteBuffer.putFloat((val-IMAGE_MEAN)/IMAGE_STD);
+//                byteBuffer.putFloat( val);
             }
         }
         return byteBuffer;
