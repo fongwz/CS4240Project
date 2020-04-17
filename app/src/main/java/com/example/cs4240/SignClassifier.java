@@ -86,6 +86,8 @@ public class SignClassifier {
         for (int x = 0; x < inputSize; x++) {
             for (int y = 0; y < inputSize; y++) {
                 int pixel = scaledImg.getPixel(y, x);
+                // Color to grey: R+G+B / num channels
+                // Normalize img to [0.0 - 1.0]: grey / 255.0f
                 input[0][x][y][0] = (Color.red(pixel) + Color.green(pixel) + Color.blue(pixel)) / (3.0f * 255.0f);
             }
         }
