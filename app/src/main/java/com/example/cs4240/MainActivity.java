@@ -67,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
         //Intent i = new Intent(this, CameraActivity.class);
         //startActivity(i);
 
+        /* Another way of converting an image to greyscale, new img will have same values in bgr channels */
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inScaled = false;
         Bitmap bmp = BitmapFactory.decodeResource(this.getResources(),  test_img, options);
@@ -90,24 +91,6 @@ public class MainActivity extends AppCompatActivity {
         } catch(Exception e) {
             e.printStackTrace();
         }
-    }
-
-    public Bitmap toGrayscale(Bitmap bmpOriginal)
-    {
-        int width, height;
-        height = bmpOriginal.getHeight();
-        width = bmpOriginal.getWidth();
-
-        Bitmap bmpGrayscale = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        Canvas c = new Canvas(bmpGrayscale);
-        Paint paint = new Paint();
-        ColorMatrix cm = new ColorMatrix();
-        cm.setSaturation(0);
-        ColorMatrixColorFilter f = new ColorMatrixColorFilter(cm);
-        paint.setColorFilter(f);
-        c.drawBitmap(bmpOriginal, 0, 0, paint);
-        bmpOriginal.recycle();
-        return bmpGrayscale;
     }
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {

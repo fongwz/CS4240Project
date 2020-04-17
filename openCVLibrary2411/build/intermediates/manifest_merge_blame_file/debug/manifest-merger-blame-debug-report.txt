@@ -6,8 +6,8 @@
 6
 7    <uses-sdk
 8        android:minSdkVersion="21"
-8-->C:\Users\Louise\Desktop\4240proj\CS4240Project\openCVLibrary2411\src\main\AndroidManifest.xml
+8-->C:\Users\Fong Wei Zheng\Desktop\NUS\Y4S2\CS4240\Project\openCVLibrary2411\src\main\AndroidManifest.xml
 9        android:targetSdkVersion="29" />
-9-->C:\Users\Louise\Desktop\4240proj\CS4240Project\openCVLibrary2411\src\main\AndroidManifest.xml
+9-->C:\Users\Fong Wei Zheng\Desktop\NUS\Y4S2\CS4240\Project\openCVLibrary2411\src\main\AndroidManifest.xml
 10
 11</manifest>
