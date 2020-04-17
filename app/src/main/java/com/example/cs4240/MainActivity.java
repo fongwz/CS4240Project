@@ -12,7 +12,7 @@ import android.widget.ImageView;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int test_img = R.drawable.clench2;
+    private static final int test_img = R.drawable.f;
     private static final String model_file = "palm.tflite";
     private static final String sign_model_file = "converted_model.tflite";
 
@@ -29,8 +29,11 @@ public class MainActivity extends AppCompatActivity {
             Bitmap newBmp = bmp.copy(android.graphics.Bitmap.Config.ARGB_8888, true);
 
             classifier = new HandClassifier(this, model_file);
+            signClassifier = new SignClassifier(this, sign_model_file);
             //signClassifier = new SignClassifier(this, sign_model_file);
             //classifier.predict(bmp);
+
+            signClassifier.predict(bmp);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -42,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
         //this.classifier.label(newBmp);
         //ImageView imView = (ImageView)findViewById(R.id.im_view);
         //imView.setImageBitmap(newBmp);
+
     }
 
     public void onButtonClick(View view) {

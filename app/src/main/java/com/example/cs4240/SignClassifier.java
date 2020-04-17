@@ -49,17 +49,6 @@ public class SignClassifier {
     private float[][] res_reg;
     private ByteBuffer byteBuffer;
 
-    private CSVReader csvReader;
-    private ArrayList<float[]> anchors;
-    private ArrayList<float[]> anchorCandidates;
-
-    private float dx;
-    private float dy;
-    private float w;
-    private float h;
-    private float cx;
-    private float cy;
-
     private String displayText = "";
     private String[] textArr;
 
@@ -68,10 +57,6 @@ public class SignClassifier {
         this.results = null;
         this.byteBuffer = ByteBuffer.allocateDirect(4 * BATCH_SIZE * inputSize * inputSize * PIXEL_SIZE);
         this.clf_mask = new boolean[2944];
-        this.csvReader = new CSVReader(new BufferedReader(new InputStreamReader(activity.getAssets().open("anchors.csv"))));
-        this.anchors = new ArrayList<>();
-        this.anchorCandidates = new ArrayList<>();
-        loadAnchors();
         initTextArr();
 
         FirebaseCustomLocalModel localModel = new FirebaseCustomLocalModel.Builder()
@@ -87,7 +72,7 @@ public class SignClassifier {
                             .setInputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, inputSize, inputSize, PIXEL_SIZE})
 //                            .setOutputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 2944, 18})
 //                            .setOutputFormat(1, FirebaseModelDataType.FLOAT32, new int[]{1, 2944, 1})
-                            .setOutputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 39})
+                            .setOutputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 29})
                             .build();
         } catch (FirebaseMLException e) {
             e.printStackTrace();
@@ -95,8 +80,9 @@ public class SignClassifier {
     }
 
     public void predict(Bitmap image) throws FirebaseMLException {
+        ByteBuffer buffer = convertBitmapToByteBuffer(image);
         FirebaseModelInputs inputs = new FirebaseModelInputs.Builder()
-                .add(convertBitmapToByteBuffer(image))  // add() as many input arrays as your model requires
+                .add(buffer)  // add() as many input arrays as your model requires
                 .build();
         interpreter.run(inputs, inputOutputOptions)
                 .addOnSuccessListener(
@@ -131,22 +117,6 @@ public class SignClassifier {
         canvas.drawText(displayText, 100, 100, paint);
     }
 
-    private void loadAnchors() {
-        String[] nextLine;
-        try {
-            while ((nextLine = csvReader.readNext()) != null) {
-                anchors.add(new float[]{
-                        Float.valueOf(nextLine[0]),
-                        Float.valueOf(nextLine[1]),
-                        Float.valueOf(nextLine[2]),
-                        Float.valueOf(nextLine[3])
-                });
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     private ByteBuffer convertBitmapToByteBuffer(Bitmap bitmap) {
         byteBuffer.clear();
         byteBuffer.order(ByteOrder.nativeOrder());
@@ -158,10 +128,10 @@ public class SignClassifier {
         for (int i = 0; i < inputSize; ++i) {
             for (int j = 0; j < inputSize; ++j) {
                 final int val = intValues[pixel++];
-//                byteBuffer.putFloat((((val >> 16) & 0xFF)-IMAGE_MEAN)/IMAGE_STD);
+                //              byteBuffer.putFloat((((val >> 16) & 0xFF)-IMAGE_MEAN)/IMAGE_STD);
 //                byteBuffer.putFloat((((val >> 8) & 0xFF)-IMAGE_MEAN)/IMAGE_STD);
 //                byteBuffer.putFloat((((val) & 0xFF)-IMAGE_MEAN)/IMAGE_STD);
-                byteBuffer.putFloat((val-IMAGE_MEAN)/IMAGE_STD);
+                  byteBuffer.putFloat((val-IMAGE_MEAN)/IMAGE_STD);
 //                byteBuffer.putFloat( val);
             }
         }
@@ -173,28 +143,13 @@ public class SignClassifier {
 //        res_clf = firebaseResults.getOutput(1);
 
         Log.d("test", Arrays.deepToString(res_reg));
-        anchorCandidates.clear();
 
         for (int i = 0; i < res_reg[0].length; i++) {
             if (res_reg[0][i] == 1.0f) {
                 Log.d("test", "idx: " + i + " : value " + textArr[i]);
                 this.displayText = textArr[i];
-//                if (displayText.isEmpty()){
-//                    displayText.concat(textArr[i]);
-//                } else {
-//                    displayText
-//                }
             }
         }
-//        Log.d("test", "post processing sign model output");
-
-//        createDetectionMask();
-//        createFilteredDetections();
-//        int maxIdx = argMax(detectionCandidates, 3);
-//
-//        if (detectionCandidates.size() <= 0) {
-//            return;
-//        }
     }
 
     private void initTextArr() {
@@ -203,39 +158,4 @@ public class SignClassifier {
                                 "s", "space", "t", "u", "v", "w", "x", "y", "z", "0",
                                 "1", "2", "3", "4", "5", "6", "7", "8", "9"};
     }
-//
-//    public void createDetectionMask() {
-//        for (int i = 0 ; i < res_clf[0].length; i++) {
-//            clf_mask[i] = getSigM(res_clf[0][i][0]) > 0.7;
-//        }
-//    }
-//
-//    public float getSigM(float x) {
-//        return (float) ((float) 1 / (1 + Math.exp(-x)));
-//    }
-//
-//    public void createFilteredDetections() {
-//        for (int i = 0; i < res_reg[0].length; i++) {
-//            if (clf_mask[i]) {
-//                detectionCandidates.add(res_reg[0][i]);
-//                anchorCandidates.add(anchors.get(i));
-//            }
-//        }
-//    }
-//
-//    /*
-//    Argmax for a specific index in a 2d array
-//     */
-//    public int argMax(ArrayList<float[]> array, int arrayIndexSelector) {
-//        int idx = 0;
-//        float currMax = -999;
-//        for (int i = 0 ; i < array.size(); i++) {
-//            if (array.get(i)[arrayIndexSelector] > currMax) {
-//                idx = i;
-//                currMax = array.get(i)[arrayIndexSelector];
-//            }
-//        }
-//
-//        return idx;
-//    }
 }
