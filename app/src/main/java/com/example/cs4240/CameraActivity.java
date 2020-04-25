@@ -74,10 +74,10 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     */
 
     private static final String TAG = "test";
-    private static final int LEFT = 100;
-    private static final int RIGHT = 250;
-    private static final int TOP = 300;
-    private static final int BOTTOM = 450;
+    private static final int LEFT = 200;
+    private static final int RIGHT = 520;
+    private static final int TOP = 200;
+    private static final int BOTTOM = 520;
 
     private CameraBridgeViewBase mOpenCvCameraView;
     private boolean  mIsJavaCamera = true;
@@ -173,6 +173,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     public void onCameraViewStopped() {
         mRgba.release();
     }
+
 
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         mRgba = inputFrame.rgba();
