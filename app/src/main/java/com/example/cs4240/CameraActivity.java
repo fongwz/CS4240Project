@@ -11,7 +11,9 @@ import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
@@ -72,6 +74,10 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     */
 
     private static final String TAG = "test";
+    private static final int LEFT = 100;
+    private static final int RIGHT = 250;
+    private static final int TOP = 300;
+    private static final int BOTTOM = 450;
 
     private CameraBridgeViewBase mOpenCvCameraView;
     private boolean  mIsJavaCamera = true;
@@ -117,6 +123,14 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         overlayBmp = Bitmap.createBitmap(720,1280, Bitmap.Config.ARGB_8888);
         overlayBmp = Bitmap.createScaledBitmap(overlayBmp, 720 , (int)height, true);
 
+        Paint paint = new Paint();
+        paint.setStyle(Paint.Style.FILL);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(10.0f);
+        paint.setColor(Color.RED);
+        Canvas canvas = new Canvas(overlayBmp);
+        canvas.drawRect(LEFT, TOP, RIGHT, BOTTOM, paint);
+
         ImageView imView = (ImageView)findViewById(R.id.im_view);
         imView.setImageBitmap(overlayBmp);
         try {
@@ -129,29 +143,6 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 //            signClassifier = new SignClassifier(this, "sign_detection.tflite");
             signClassifier = new SignClassifier(this, "sign_detection_with_numbers.tflite");
         } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            AssetManager am = getAssets();
-            String[] names = am.list("asl_alphabet_test");
-            Log.d("test", Arrays.toString(names));
-            for (String name : names) {
-                InputStream input = am.open("asl_alphabet_test/" + name);
-//                Bitmap image = BitmapFactory.decodeFile(pathname);
-                Bitmap image = BitmapFactory.decodeStream(input);
-                if (image == null) {
-                    Log.d("test", "error creating bitmap");
-                    break;
-                }
-                try {
-                    signClassifier.predict(image);
-                } catch (FirebaseMLException e) {
-                    e.printStackTrace();
-                }
-            }
-        } catch (IOException e) {
-            Log.d("test", "cannot read dir");
             e.printStackTrace();
         }
     }
@@ -196,7 +187,11 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         Core.flip(mRgbaF, mRgba, 1 );
 
         Utils.matToBitmap(mRgba, bmp);
-        overlayBmp.eraseColor(Color.TRANSPARENT);
+        predictSign(LEFT, TOP, RIGHT-LEFT, BOTTOM-TOP);
+
+
+
+        //overlayBmp.eraseColor(Color.TRANSPARENT);
 
 
 //        try {

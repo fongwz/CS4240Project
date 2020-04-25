@@ -64,33 +64,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onButtonClick(View view) {
-        //Intent i = new Intent(this, CameraActivity.class);
-        //startActivity(i);
-
-        /* Another way of converting an image to greyscale, new img will have same values in bgr channels */
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inScaled = false;
-        Bitmap bmp = BitmapFactory.decodeResource(this.getResources(),  test_img, options);
-
-        Log.d("test", "Before cvt Bmp Size:"+ bmp.getWidth() + "x" + bmp.getHeight());
-        Mat src = new Mat();
-        Utils.bitmapToMat(bmp, src);
-        Mat dest = new Mat();
-
-        Imgproc.cvtColor(src, dest, Imgproc.COLOR_BGR2GRAY);
-
-        Bitmap gbmp = Bitmap.createBitmap(dest.cols(), dest.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(dest, gbmp);
-        Log.d("test", "After cvt Bmp Size:"+ gbmp.getWidth() + "x" + gbmp.getHeight());
-
-        ImageView imView = (ImageView)findViewById(R.id.im_view);
-        imView.setImageBitmap(gbmp);
-
-        try {
-            signClassifier.predict(gbmp);
-        } catch(Exception e) {
-            e.printStackTrace();
-        }
+        Intent i = new Intent(this, CameraActivity.class);
+        startActivity(i);
     }
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
