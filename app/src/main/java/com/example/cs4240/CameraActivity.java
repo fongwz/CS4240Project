@@ -174,7 +174,6 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         mRgba.release();
     }
 
-
     public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame inputFrame) {
         mRgba = inputFrame.rgba();
 
@@ -188,12 +187,10 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         Core.flip(mRgbaF, mRgba, 1 );
 
         Utils.matToBitmap(mRgba, bmp);
+
         predictSign(LEFT, TOP, RIGHT-LEFT, BOTTOM-TOP);
 
-
-
         //overlayBmp.eraseColor(Color.TRANSPARENT);
-
 
 //        try {
 //            handClassifier.predict(bmp);

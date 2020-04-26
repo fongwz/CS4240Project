@@ -20,6 +20,8 @@ import com.google.firebase.ml.custom.FirebaseModelInterpreter;
 import com.google.firebase.ml.custom.FirebaseModelInterpreterOptions;
 import com.google.firebase.ml.custom.FirebaseModelOutputs;
 
+import org.apache.commons.lang3.ObjectUtils;
+
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -36,6 +38,9 @@ public class SignClassifier {
 
     private String displayText = "";
     private String[] textArr;
+
+    private int[] detectResults = new int[7];
+    private int counter = 0;
 
     public SignClassifier(Activity activity, String model) throws IOException {
         this.parentActivity = activity;
@@ -81,7 +86,12 @@ public class SignClassifier {
                         new OnSuccessListener<FirebaseModelOutputs>() {
                             @Override
                             public void onSuccess(FirebaseModelOutputs result) {
-                                getDetections(result); //post processing
+                                //try {
+                                    int toDetect = getDetections(result); //post processing
+                                    getDetectedResult(toDetect);
+                                //} catch (NullPointerException e){
+                                 //   System.out.println("Null pointer exception caught");
+                                //}
                             }
                         })
                 .addOnFailureListener(
@@ -92,6 +102,7 @@ public class SignClassifier {
                                 e.printStackTrace();
                             }
                         });
+
     }
 
     public void label(Bitmap image) {
@@ -108,11 +119,54 @@ public class SignClassifier {
         canvas.drawText(displayText, 100, 100, paint);
     }
 
-    private void getDetections(FirebaseModelOutputs firebaseResults) {
+    private void getDetectedResult(int result){
+        detectResults[counter] = result;  //store results in detectResults[] for comparison later on
+        counter++;
+
+        //Array is filled
+        if (counter == 7){
+            Arrays.sort(detectResults);
+
+            // find the max frequency using linear
+            // traversal
+            int max_count = 1, res = detectResults[0];
+            int curr_count = 1;
+
+            for (int i = 1; i < 7; i++)
+            {
+                if (detectResults[i] == detectResults[i - 1])
+                    curr_count++;
+                else
+                {
+                    if (curr_count > max_count)
+                    {
+                        max_count = curr_count;
+                        res = detectResults[i - 1];
+                    }
+                    curr_count = 1;
+                }
+            }
+
+            // If last element is most frequent
+            if (curr_count > max_count)
+            {
+                max_count = curr_count;
+                res = detectResults[6];
+            }
+            if (res > 4) { //if appear more than 4 times, character appears here
+                Log.d("test", "Detected letter is: " + res);
+            }
+            counter = 0; //reset counter
+        }
+    }
+
+    private int getDetections(FirebaseModelOutputs firebaseResults) {
         results = firebaseResults.getOutput(0);
 
         Log.d("test", Arrays.deepToString(results));
         Log.d("test", "idx: " + argMax(results, 0) + " : value " + textArr[argMax(results, 0)]);
+
+        return argMax(results, 0);
     }
 
     private void initTextArr() {
