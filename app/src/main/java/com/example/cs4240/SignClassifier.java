@@ -127,8 +127,7 @@ public class SignClassifier {
         if (counter == 7){
             Arrays.sort(detectResults);
 
-            // find the max frequency using linear
-            // traversal
+            // find the max frequency using linear traversal
             int max_count = 1, res = detectResults[0];
             int curr_count = 1;
 
