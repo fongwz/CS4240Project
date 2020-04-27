@@ -92,9 +92,7 @@ public class Camera2Activity extends AppCompatActivity {
         int screenCenterX = (size.x /2);
         int screenCenterY = (size.y/2) ;
         DrawOnTop mDraw = new DrawOnTop(this,screenCenterX,screenCenterY);
-        addContentView(mDraw, new ConstraintLayout.LayoutParams(
-                ConstraintLayout.LayoutParams.WRAP_CONTENT, ConstraintLayout.LayoutParams.WRAP_CONTENT));
-
+        //addContentView(mDraw, new ConstraintLayout.LayoutParams(ConstraintLayout.LayoutParams.WRAP_CONTENT, ConstraintLayout.LayoutParams.WRAP_CONTENT));
 
         try {
             signClassifier = new SignClassifier(this, "default17.tflite");
