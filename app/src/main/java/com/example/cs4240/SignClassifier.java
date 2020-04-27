@@ -153,7 +153,7 @@ public class SignClassifier {
                 res = detectResults[6];
             }
             if (max_count >= 4) { //if appear more than 4 times, character appears here
-                Log.d("test", "Detected letter is: " + res);
+                Log.d("test", "Detected letter is: " + textArr[res]);
             }
             counter = 0; //reset counter
         }

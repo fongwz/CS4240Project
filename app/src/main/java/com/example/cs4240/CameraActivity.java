@@ -134,7 +134,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         imView.setImageBitmap(overlayBmp);
 
         try {
-            signClassifier = new SignClassifier(this, "default.tflite");
+            signClassifier = new SignClassifier(this, "resnet50_9000.tflite");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -184,12 +184,12 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         predictSign(LEFT, TOP, RIGHT-LEFT, BOTTOM-TOP);
 
         //overlayBmp.eraseColor(Color.TRANSPARENT);
-
 //        try {
 //            handClassifier.predict(bmp);
 //        } catch (FirebaseMLException e) {
 //            e.printStackTrace();
 //        }
+
         return mRgba; // This function must return
     }
 
@@ -209,6 +209,9 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
         Log.d("parameters", x + " : " + y + " : " + w + " : " + h);
         Bitmap roi = Bitmap.createBitmap(bmp, x, y, w, h);
+
+        ImageView imView = (ImageView)findViewById(R.id.im_view);
+        imView.setImageBitmap(roi);
 
         try {
             signClassifier.predict(roi);

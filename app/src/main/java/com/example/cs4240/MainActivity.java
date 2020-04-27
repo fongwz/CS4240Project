@@ -59,11 +59,10 @@ public class MainActivity extends AppCompatActivity {
         //this.classifier.label(newBmp);
         //ImageView imView = (ImageView)findViewById(R.id.im_view);
         //imView.setImageBitmap(newBmp);
-
     }
 
     public void onButtonClick(View view) {
-        Intent i = new Intent(this, CameraActivity.class);
+        Intent i = new Intent(this, Camera2Activity.class);
         startActivity(i);
     }
 
