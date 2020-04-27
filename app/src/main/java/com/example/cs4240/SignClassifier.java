@@ -35,7 +35,6 @@ public class SignClassifier {
     private float[][] results;
     private float[][][][] input;
 
-
     private String displayText = "";
     private String[] textArr;
 
@@ -164,7 +163,7 @@ public class SignClassifier {
 
         //Log.d("test", Arrays.deepToString(results));
         Log.d("test", "idx: " + argMax(results, 0) + " : value " + textArr[argMax(results, 0)]);
-
+        ((Camera2Activity) parentActivity).togglePredicting();
         return argMax(results, 0);
     }
 

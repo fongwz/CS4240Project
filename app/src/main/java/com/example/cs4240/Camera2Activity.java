@@ -29,6 +29,7 @@ import android.util.Size;
 import android.view.Surface;
 import android.view.TextureView;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.google.firebase.ml.common.FirebaseMLException;
 
@@ -53,25 +54,23 @@ public class Camera2Activity extends AppCompatActivity {
     private Size previewSize;
     private CaptureRequest.Builder captureRequestBuilder;
     private CaptureRequest captureRequest;
-    private ImageReader imageReader;
-
     private TextureView textureView;
-
     private static final int CAMERA_REQUEST_CODE = 1888;
-
-    private HandClassifier classifier;
-    private Bitmap newBmp;
 
     private Bitmap frame;
     private Boolean init;
 
     private SignClassifier signClassifier;
+    private boolean isPredicting = false;
+
+    private TextView textView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera2);
         textureView = findViewById(R.id.texture_view);
+        textView = findViewById(R.id.textview);
         init = false;
 
         try {
@@ -107,9 +106,14 @@ public class Camera2Activity extends AppCompatActivity {
                 if (!init) {
                     frame = Bitmap.createBitmap(textureView.getWidth(), textureView.getHeight(), Bitmap.Config.ARGB_8888);
                 }
+
+                if (isPredicting) {
+                    return;
+                }
                 textureView.getBitmap(frame);
                 //Log.d("test",  "pixel val:" + frame.getPixel(55, 55));
                 try {
+                    isPredicting = true;
                     signClassifier.predict(frame);
                 } catch (FirebaseMLException e) {
                     e.printStackTrace();
@@ -136,6 +140,10 @@ public class Camera2Activity extends AppCompatActivity {
                 Camera2Activity.this.cameraDevice = null;
             }
         };
+    }
+
+    public void togglePredicting() {
+        isPredicting = false;
     }
 
     private void setUpCamera() {
@@ -173,21 +181,6 @@ public class Camera2Activity extends AppCompatActivity {
             surfaceTexture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
             Surface previewSurface = new Surface(surfaceTexture);
             captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            imageReader = ImageReader.newInstance(previewSize.getWidth(), previewSize.getHeight(), ImageFormat.YUV_420_888, 2);
-            imageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
-                @Override
-                public void onImageAvailable(ImageReader reader) {
-                    Image image = reader.acquireNextImage();
-                    if (image == null) {
-                        return;
-                    }
-
-
-                    image.close();
-                }
-            }, backgroundHandler);
-
-
             captureRequestBuilder.addTarget(previewSurface);
             //captureRequestBuilder.addTarget(imageReader.getSurface());
 
@@ -221,10 +214,6 @@ public class Camera2Activity extends AppCompatActivity {
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
-    }
-
-    public void labelImage() {
-        this.classifier.label(newBmp);
     }
 
     private void openBackgroundThread() {

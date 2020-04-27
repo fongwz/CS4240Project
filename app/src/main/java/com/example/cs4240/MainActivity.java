@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
@@ -37,28 +38,19 @@ public class MainActivity extends AppCompatActivity {
         OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        try {
-            Bitmap bmp = BitmapFactory.decodeResource(this.getResources(), test_img);
-            Bitmap newBmp = bmp.copy(android.graphics.Bitmap.Config.ARGB_8888, true);
 
-            signClassifier = new SignClassifier(this, sign_model_file);
-            //signClassifier = new SignClassifier(this, sign_model_file);
-            //classifier.predict(toGrayscale(bmp));
+        ImageView imView = (ImageView)findViewById(R.id.im_view);
+        imView.setImageResource(R.drawable.logo);
 
-            //Bitmap grayscaleBmp = toGrayscale(bmp);
-            signClassifier.predict(bmp);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        ImageView bgIm = findViewById(R.id.background_im);
+        bgIm.setBackgroundColor(Color.BLACK);
     }
 
     public void setImage() {
         Bitmap bmp = BitmapFactory.decodeResource(this.getResources(), test_img);
         Bitmap newBmp = bmp.copy(android.graphics.Bitmap.Config.ARGB_8888, true);
         //this.classifier.label(newBmp);
-        //ImageView imView = (ImageView)findViewById(R.id.im_view);
-        //imView.setImageBitmap(newBmp);
+
     }
 
     public void onButtonClick(View view) {
