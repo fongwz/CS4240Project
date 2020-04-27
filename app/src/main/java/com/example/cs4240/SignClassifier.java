@@ -88,6 +88,8 @@ public class SignClassifier {
                                 //try {
                                     int toDetect = getDetections(result); //post processing
                                     getDetectedResult(toDetect);
+                                ((Camera2Activity)parentActivity).setDisplayText(displayText);
+
                                 //} catch (NullPointerException e){
                                  //   System.out.println("Null pointer exception caught");
                                 //}
@@ -153,6 +155,12 @@ public class SignClassifier {
             }
             if (max_count >= 4) { //if appear more than 4 times, character appears here
                 Log.d("test", "Detected letter is: " + textArr[res]);
+                if (displayText.length() > 20) {
+                    // limit length of word
+                    displayText = textArr[res];
+                } else {
+                    displayText = displayText.concat(textArr[res]);
+                }
             }
             counter = 0; //reset counter
         }
@@ -162,7 +170,7 @@ public class SignClassifier {
         results = firebaseResults.getOutput(0);
 
         //Log.d("test", Arrays.deepToString(results));
-        Log.d("test", "idx: " + argMax(results, 0) + " : value " + textArr[argMax(results, 0)]);
+//        Log.d("test", "idx: " + argMax(results, 0) + " : value " + textArr[argMax(results, 0)]);
         ((Camera2Activity) parentActivity).togglePredicting();
         return argMax(results, 0);
     }

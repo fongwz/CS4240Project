@@ -164,6 +164,10 @@ public class Camera2Activity extends AppCompatActivity {
         }
     }
 
+    public void setDisplayText(String text) {
+        textView.setText(text);
+    }
+
     private void openCamera() {
         try {
             if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
