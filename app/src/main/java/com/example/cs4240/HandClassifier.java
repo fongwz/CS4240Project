@@ -116,7 +116,6 @@ public class HandClassifier {
                                 //((MainActivity)parentActivity).setImage();
                                 calculateParameters(((CameraActivity)parentActivity).getBitmap());
                                 ((CameraActivity)parentActivity).predictSign(x, y, width, height);
-                                ((CameraActivity)parentActivity).setImage();
                                 //results2 = result.getOutput(1);
                                 //Log.d("test", "Time taken to process results: " + String.valueOf(duration/1000000) + "ms");
                                 //if (results2[0][0] >= 0.9)

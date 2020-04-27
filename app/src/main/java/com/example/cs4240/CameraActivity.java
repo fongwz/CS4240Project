@@ -76,8 +76,8 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     private static final String TAG = "test";
     private static final int LEFT = 200;
     private static final int RIGHT = 520;
-    private static final int TOP = 200;
-    private static final int BOTTOM = 520;
+    private static final int TOP = 150;
+    private static final int BOTTOM = 450;
 
     private CameraBridgeViewBase mOpenCvCameraView;
     private boolean  mIsJavaCamera = true;
@@ -90,7 +90,6 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     private Bitmap overlayBmp;
     private boolean initBmp = false;
     private static final int CAMERA_PERMISSION = 555;
-    private HandClassifier handClassifier;
     private SignClassifier signClassifier;
 
     private CameraCharacteristics cameraCharacteristics;
@@ -133,15 +132,9 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
         ImageView imView = (ImageView)findViewById(R.id.im_view);
         imView.setImageBitmap(overlayBmp);
-        try {
-            handClassifier = new HandClassifier(this, "palm.tflite");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
         try {
-//            signClassifier = new SignClassifier(this, "sign_detection.tflite");
-            signClassifier = new SignClassifier(this, "sign_detection_with_numbers.tflite");
+            signClassifier = new SignClassifier(this, "default.tflite");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -222,12 +215,6 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         } catch (FirebaseMLException e) {
             e.printStackTrace();
         }
-    }
-
-    public void setImage() {
-        this.handClassifier.label(overlayBmp);
-        ImageView imView = (ImageView)findViewById(R.id.im_view);
-        imView.setImageBitmap(overlayBmp);
     }
 
     public void setTextImage() {

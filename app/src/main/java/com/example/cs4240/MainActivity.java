@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int test_img = R.drawable.i;
     private static final String model_file = "palm.tflite";
-    private static final String sign_model_file = "converted_model.tflite";
+    private static final String sign_model_file = "default.tflite";
 
     private HandClassifier classifier;
     private SignClassifier signClassifier;
@@ -41,7 +41,6 @@ public class MainActivity extends AppCompatActivity {
             Bitmap bmp = BitmapFactory.decodeResource(this.getResources(), test_img);
             Bitmap newBmp = bmp.copy(android.graphics.Bitmap.Config.ARGB_8888, true);
 
-            classifier = new HandClassifier(this, model_file);
             signClassifier = new SignClassifier(this, sign_model_file);
             //signClassifier = new SignClassifier(this, sign_model_file);
             //classifier.predict(toGrayscale(bmp));

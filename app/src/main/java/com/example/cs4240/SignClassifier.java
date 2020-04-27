@@ -59,7 +59,7 @@ public class SignClassifier {
             inputOutputOptions =
                     new FirebaseModelInputOutputOptions.Builder()
                             .setInputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, inputSize, inputSize, 1})
-                            .setOutputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 39})
+                            .setOutputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 26})
                             .build();
         } catch (FirebaseMLException e) {
             e.printStackTrace();
@@ -162,17 +162,16 @@ public class SignClassifier {
     private int getDetections(FirebaseModelOutputs firebaseResults) {
         results = firebaseResults.getOutput(0);
 
-        Log.d("test", Arrays.deepToString(results));
+        //Log.d("test", Arrays.deepToString(results));
         Log.d("test", "idx: " + argMax(results, 0) + " : value " + textArr[argMax(results, 0)]);
 
         return argMax(results, 0);
     }
 
     private void initTextArr() {
-        textArr = new String[]{"a", "b", "c", "d", "delete", "e", "f", "g", "h", "i",
-                                "j", "k", "l", "m", "n", "nothing", "o", "p", "q", "r",
-                                "s", "space", "t", "u", "v", "w", "x", "y", "z", "0",
-                                "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        textArr = new String[]{"a", "b", "c", "d", "e", "f", "g", "h", "i",
+                                "j", "k", "l", "m", "n", "o", "p", "q", "r",
+                                "s", "t", "u", "v", "w", "x", "y", "z"};
     }
 
     public int argMax(float[][] array, int arrayIndexSelector) {
