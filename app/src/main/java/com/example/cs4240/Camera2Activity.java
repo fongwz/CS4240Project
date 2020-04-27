@@ -75,7 +75,7 @@ public class Camera2Activity extends AppCompatActivity {
         init = false;
 
         try {
-            signClassifier = new SignClassifier(this, "default.tflite");
+            signClassifier = new SignClassifier(this, "default17.tflite");
         } catch (Exception e) {
             e.printStackTrace();
         }

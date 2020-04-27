@@ -58,7 +58,7 @@ public class SignClassifier {
             inputOutputOptions =
                     new FirebaseModelInputOutputOptions.Builder()
                             .setInputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, inputSize, inputSize, 1})
-                            .setOutputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 26})
+                            .setOutputFormat(0, FirebaseModelDataType.FLOAT32, new int[]{1, 17})
                             .build();
         } catch (FirebaseMLException e) {
             e.printStackTrace();
@@ -180,9 +180,8 @@ public class SignClassifier {
     }
 
     private void initTextArr() {
-        textArr = new String[]{"a", "b", "c", "d", "e", "f", "g", "h", "i",
-                                "j", "k", "l", "m", "n", "o", "p", "q", "r",
-                                "s", "t", "u", "v", "w", "x", "y", "z"};
+        textArr = new String[]{"b", "c", "d", "e", "f", "g", "h", "i",
+                "l", "o", "p", "q", "u", "v","x", "y", "z"};
     }
 
     public int argMax(float[][] array, int arrayIndexSelector) {
