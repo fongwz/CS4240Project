@@ -28,6 +28,7 @@ import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 import android.view.TextureView;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -166,6 +167,10 @@ public class Camera2Activity extends AppCompatActivity {
 
     public void setDisplayText(String text) {
         textView.setText(text);
+    }
+
+    public void onButtonClick(View view) {
+        this.signClassifier.resetDisplayText();
     }
 
     private void openCamera() {

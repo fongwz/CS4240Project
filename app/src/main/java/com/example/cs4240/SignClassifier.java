@@ -120,6 +120,10 @@ public class SignClassifier {
         canvas.drawText(displayText, 100, 100, paint);
     }
 
+    public void resetDisplayText() {
+        displayText = "";
+    }
+
     private void getDetectedResult(int result){
         detectResults[counter] = result;  //store results in detectResults[] for comparison later on
         counter++;
