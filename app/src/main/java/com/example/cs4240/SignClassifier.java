@@ -88,8 +88,6 @@ public class SignClassifier {
                                 //try {
                                     int toDetect = getDetections(result); //post processing
                                     getDetectedResult(toDetect);
-                                ((Camera2Activity)parentActivity).setDisplayText(displayText);
-
                                 //} catch (NullPointerException e){
                                  //   System.out.println("Null pointer exception caught");
                                 //}
@@ -122,6 +120,7 @@ public class SignClassifier {
 
     public void resetDisplayText() {
         displayText = "";
+        ((Camera2Activity)parentActivity).clearDisplayText(displayText);
     }
 
     private void getDetectedResult(int result){
@@ -165,6 +164,7 @@ public class SignClassifier {
                 } else {
                     displayText = displayText.concat(textArr[res]);
                 }
+                ((Camera2Activity)parentActivity).setDisplayText(displayText);
             }
             counter = 0; //reset counter
         }

@@ -17,7 +17,7 @@
         android:id="@+id/textview"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="CS4240 S.T.AR.T"
+        android:text=""
         android:textSize="30dp"
         android:textAllCaps="true"
         android:background="#88000000"

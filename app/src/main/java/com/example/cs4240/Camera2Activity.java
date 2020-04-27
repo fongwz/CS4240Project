@@ -2,15 +2,22 @@ package com.example.cs4240;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.app.ActionBar;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.DashPathEffect;
 import android.graphics.ImageFormat;
+import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -26,6 +33,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
 import android.util.Size;
+import android.view.Display;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
@@ -64,6 +72,9 @@ public class Camera2Activity extends AppCompatActivity {
     private SignClassifier signClassifier;
     private boolean isPredicting = false;
 
+    private Handler cooldownHandler;
+    private boolean isCooldown = false;
+
     private TextView textView;
 
     @Override
@@ -73,6 +84,17 @@ public class Camera2Activity extends AppCompatActivity {
         textureView = findViewById(R.id.texture_view);
         textView = findViewById(R.id.textview);
         init = false;
+        cooldownHandler = new Handler();
+
+        Display display = getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        int screenCenterX = (size.x /2);
+        int screenCenterY = (size.y/2) ;
+        DrawOnTop mDraw = new DrawOnTop(this,screenCenterX,screenCenterY);
+        addContentView(mDraw, new ConstraintLayout.LayoutParams(
+                ConstraintLayout.LayoutParams.WRAP_CONTENT, ConstraintLayout.LayoutParams.WRAP_CONTENT));
+
 
         try {
             signClassifier = new SignClassifier(this, "default17.tflite");
@@ -108,7 +130,7 @@ public class Camera2Activity extends AppCompatActivity {
                     frame = Bitmap.createBitmap(textureView.getWidth(), textureView.getHeight(), Bitmap.Config.ARGB_8888);
                 }
 
-                if (isPredicting) {
+                if (isPredicting || isCooldown) {
                     return;
                 }
                 textureView.getBitmap(frame);
@@ -167,6 +189,18 @@ public class Camera2Activity extends AppCompatActivity {
 
     public void setDisplayText(String text) {
         textView.setText(text);
+        isCooldown = true;
+        cooldownHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                isCooldown = false;
+                //Log.d("test", "cooldown reset");
+            }
+        }, 500);
+    }
+
+    public void clearDisplayText(String emptyText) {
+        textView.setText(emptyText);
     }
 
     public void onButtonClick(View view) {
@@ -267,6 +301,31 @@ public class Camera2Activity extends AppCompatActivity {
             backgroundThread.quitSafely();
             backgroundThread = null;
             backgroundHandler = null;
+        }
+    }
+
+    class DrawOnTop extends View {
+        int screenCenterX = 0;
+        int screenCenterY = 0;
+        final int radius = 400;
+        public DrawOnTop(Context context, int screenCenterX, int screenCenterY) {
+            super(context);
+            this.screenCenterX = screenCenterX;
+            this.screenCenterY = screenCenterY;
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            // TODO Auto-generated method stub
+            Paint p = new Paint();
+            p.setColor(Color.RED);
+            p.setStrokeWidth(10.0f);
+            DashPathEffect dashPath = new DashPathEffect(new float[]{10,10}, (float)1.0);
+            p.setPathEffect(dashPath);
+            p.setStyle(Paint.Style.STROKE);
+            canvas.drawCircle(screenCenterX, screenCenterY-50, radius, p);
+            invalidate();
+            super.onDraw(canvas);
         }
     }
 }
