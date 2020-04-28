@@ -20,8 +20,6 @@ import com.google.firebase.ml.custom.FirebaseModelInterpreter;
 import com.google.firebase.ml.custom.FirebaseModelInterpreterOptions;
 import com.google.firebase.ml.custom.FirebaseModelOutputs;
 
-import org.apache.commons.lang3.ObjectUtils;
-
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -38,7 +36,7 @@ public class SignClassifier {
     private String displayText = "";
     private String[] textArr;
 
-    private int[] detectResults = new int[7];
+    private int[] detectResults = new int[6];
     private int counter = 0;
 
     public SignClassifier(Activity activity, String model) throws IOException {
@@ -128,14 +126,14 @@ public class SignClassifier {
         counter++;
 
         //Array is filled
-        if (counter == 7){
+        if (counter == 6){
             Arrays.sort(detectResults);
 
             // find the max frequency using linear traversal
             int max_count = 1, res = detectResults[0];
             int curr_count = 1;
 
-            for (int i = 1; i < 7; i++)
+            for (int i = 1; i < 6; i++)
             {
                 if (detectResults[i] == detectResults[i - 1])
                     curr_count++;
@@ -154,7 +152,7 @@ public class SignClassifier {
             if (curr_count > max_count)
             {
                 max_count = curr_count;
-                res = detectResults[6];
+                res = detectResults[5];
             }
             if (max_count >= 4) { //if appear more than 4 times, character appears here
                 Log.d("test", "Detected letter is: " + textArr[res]);
