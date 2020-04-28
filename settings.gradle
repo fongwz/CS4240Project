@@ -1,4 +1,2 @@
 rootProject.name='CS4240'
 include ':app'
-include ':openCVLibrary2411'
-include ':openCVLibrary300'
