@@ -69,7 +69,7 @@ public class Camera2Activity extends AppCompatActivity {
         cooldownHandler = new Handler();
 
         try {
-            signClassifier = new SignClassifier(this, "default17.tflite");
+            signClassifier = new SignClassifier(this, "updated.tflite");
         } catch (Exception e) {
             e.printStackTrace();
         }
